@@ -32,6 +32,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
     final now = DateTime.now();
     _tanggalAuto = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
     _loadInitialData();
+    _tambahBarisBarang();
   }
 
   @override
@@ -148,11 +149,9 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- HEADER: No Transaksi, Tanggal, Customer ---
+                    // --- HEADER: Tanggal, Customer ---
                     Row(
                       children: [
-                        Expanded(child: _buildReadOnlyField(label: 'Nomor Transaksi', value: _previewNomerPenjualan.isEmpty ? ' ID akan terbuat otomatis' : _previewNomerPenjualan)),
-                        const SizedBox(width: 20),
                         Expanded(child: _buildReadOnlyField(label: 'Tanggal Transaksi', value: _tanggalAuto.isEmpty ? '-' : _tanggalAuto)),
                         const SizedBox(width: 20),
                         Expanded(child: _buildCustomerDropdown()),
@@ -223,7 +222,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                               children: [
                                 const Text('Total Harga', style: TextStyle(fontSize: 16)),
                                 Text(
-                                  'Rp ${_hitungSubtotal().toStringAsFixed(0)}',
+                                  _formatRupiah(_hitungSubtotal()),
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
                                 ),
                               ],
@@ -242,6 +241,8 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                                     textAlign: TextAlign.right,
                                     decoration: InputDecoration(
                                       hintText: '0',
+                                      prefixText: 'Rp ',
+                                      prefixStyle: const TextStyle(fontSize: 14),
                                       filled: true,
                                       fillColor: Colors.grey.shade50,
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
@@ -259,7 +260,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                               children: [
                                 const Text('Total Akhir', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                 Text(
-                                  'Rp ${_hitungTotalAkhir().toStringAsFixed(0)}',
+                                  _formatRupiah(_hitungTotalAkhir()),
                                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
                                 ),
                               ],
@@ -518,9 +519,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
           child: TextField(
             controller: item['harga_controller'],
             keyboardType: TextInputType.number,
-            // TextEditingController(text: harga),
-            // readOnly: true,
-            decoration: _inputStyle(),
+            decoration: _inputStyle().copyWith(prefixText: 'Rp '),
             onChanged: (val) {
               _listBarang[index]['harga'] = val;
               _updateTotalRow(index);
@@ -531,9 +530,9 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
         Expanded(
           flex: 2,
           child: TextField(
-            controller: TextEditingController(text: item['total']),
+            controller: TextEditingController(text: _formatRupiah(double.tryParse(item['total'] ?? '0') ?? 0)),
             readOnly: true,
-            decoration: _inputStyle(readOnly: true).copyWith(prefixText: 'Rp ', prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+            decoration: _inputStyle(readOnly: true),
           ),
         ),
         const SizedBox(width: 10),
@@ -570,6 +569,16 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
     final subtotal = _hitungSubtotal();
     final diskon = double.tryParse(_diskonController.text) ?? 0;
     return subtotal - diskon;
+  }
+
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
   InputDecoration _inputStyle({bool readOnly = false}) {

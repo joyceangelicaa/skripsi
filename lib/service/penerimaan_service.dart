@@ -19,10 +19,17 @@ class PenerimaanService {
     int limit = 10,
     int offset = 0,
     String status = '',
+    String? startDate,
+    String? endDate,
   }) async {
-    final uri = Uri.parse(
-      "$baseUrl/penerimaan?limit=$limit&offset=$offset&status=$status",
-    );
+    final queryParams = <String, String>{
+      'limit': '$limit',
+      'offset': '$offset',
+    };
+    if (status.isNotEmpty) queryParams['status'] = status;
+    if (startDate != null) queryParams['start_date'] = startDate;
+    if (endDate != null) queryParams['end_date'] = endDate;
+    final uri = Uri.parse('$baseUrl/penerimaan').replace(queryParameters: queryParams);
 
     final response = await http.get(
       uri,
@@ -61,18 +68,21 @@ class PenerimaanService {
     required String idPembelian,
     required int totalHarga,
   }) async {
+    final uri = Uri.parse("$baseUrl/penerimaan");
     final body = {
       "id_pembelian": idPembelian,
       "total_harga": totalHarga,
     };
 
+    print("📡 POST penerimaan → $uri");
+    print("📡 Request: ${jsonEncode(body)}");
+
     final response = await http
-        .post(
-          Uri.parse("$baseUrl/penerimaan"),
-          headers: _authHeaders(),
-          body: jsonEncode(body),
-        )
+        .post(uri, headers: _authHeaders(), body: jsonEncode(body))
         .timeout(const Duration(seconds: 15));
+
+    print("📡 Status: ${response.statusCode}");
+    print("📡 Response: ${response.body}");
 
     if (response.statusCode == 201 || response.statusCode == 200) {
       final Map<String, dynamic> resBody = jsonDecode(response.body);
@@ -94,13 +104,16 @@ class PenerimaanService {
   static Future<Map<String, dynamic>> addDetailPenerimaan(
     List<Map<String, dynamic>> details,
   ) async {
+    final uri = Uri.parse("$baseUrl/penerimaan/detail");
+    print("📡 POST detail penerimaan → $uri");
+    print("📡 Request: ${jsonEncode(details)}");
+
     final response = await http
-        .post(
-          Uri.parse("$baseUrl/penerimaan/detail"),
-          headers: _authHeaders(),
-          body: jsonEncode(details),
-        )
+        .post(uri, headers: _authHeaders(), body: jsonEncode(details))
         .timeout(const Duration(seconds: 15));
+
+    print("📡 Status: ${response.statusCode}");
+    print("📡 Response: ${response.body}");
 
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception(
@@ -145,12 +158,15 @@ class PenerimaanService {
   // DELETE PENERIMAAN
   // =========================
   static Future<void> deletePenerimaan(String id) async {
+    final uri = Uri.parse("$baseUrl/penerimaan/$id");
+    print("📡 DELETE penerimaan → $uri");
+
     final response = await http
-        .delete(
-          Uri.parse("$baseUrl/penerimaan/$id"),
-          headers: _authHeaders(),
-        )
+        .delete(uri, headers: _authHeaders())
         .timeout(const Duration(seconds: 10));
+
+    print("📡 Status: ${response.statusCode}");
+    print("📡 Response: ${response.body}");
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception("Gagal hapus penerimaan (${response.statusCode})");

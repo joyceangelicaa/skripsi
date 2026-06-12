@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../global_widget/app_bar.dart';
 import '../../global_widget/table.dart';
+import '../../global_widget/delete_confirmation_dialog.dart';
+import '../../global_widget/confirmation_dialog.dart';
 import '../../root/app_route.dart';
 import '../../service/penerimaan_service.dart';
 
@@ -12,10 +14,15 @@ class PenerimaanScreen extends StatefulWidget {
 }
 
 class _PenerimaanScreenState extends State<PenerimaanScreen> {
-  List<Map<String, dynamic>> _listSelesai = [];
+  List<Map<String, dynamic>> _listPenerimaan = [];
   List<Map<String, dynamic>> _filteredList = [];
   bool _isLoading = true;
+  String? _deletingId;
+  DateTime? _startDate;
+  DateTime? _endDate;
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
 
   @override
   void initState() {
@@ -25,39 +32,43 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
 
   Future<void> _fetchPenerimaan() async {
     try {
+      String? startStr;
+      String? endStr;
+      if (_startDate != null) {
+        startStr = '${_startDate!.year}-${_startDate!.month.toString().padLeft(2, '0')}-${_startDate!.day.toString().padLeft(2, '0')}';
+      }
+      if (_endDate != null) {
+        endStr = '${_endDate!.year}-${_endDate!.month.toString().padLeft(2, '0')}-${_endDate!.day.toString().padLeft(2, '0')}';
+      }
+
       final data = await PenerimaanService.getAllPenerimaan(
-        status: "selesai", limit: 999
+        limit: 999, startDate: startStr, endDate: endStr
       );
 
       List<Map<String, dynamic>> mapped = [];
-
       for (int i = 0; i < data.length; i++) {
         final item = data[i];
-
         mapped.add({
           "no": (i + 1).toString(),
-          "id": item['id_pembelian'],
+          "id_pembelian": item['id_pembelian'],
           "tanggal": _formatTanggal(item['tanggal_penerimaan']),
-          "status": item['status'] ?? '-',
-          "id_penerimaan": item['id_penerimaan'], // penting untuk detail
+          "id_penerimaan": item['id_penerimaan'],
           "created_at": item['created_at'],
         });
       }
       mapped.sort((a, b) => (b['created_at'] ?? '').toString().compareTo((a['created_at'] ?? '').toString()));
-
       for (int i = 0; i < mapped.length; i++) {
         mapped[i]['no'] = (i + 1).toString();
         mapped[i].remove('created_at');
       }
 
       setState(() {
-        _listSelesai = mapped;
+        _listPenerimaan = mapped;
         _filteredList = mapped;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,21 +82,47 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
 
   String _formatTanggal(String? isoDate) {
     if (isoDate == null) return '-';
-
     final date = DateTime.tryParse(isoDate);
     if (date == null) return '-';
-
     return "${date.day.toString().padLeft(2, '0')}/"
         "${date.month.toString().padLeft(2, '0')}/"
         "${date.year}";
   }
 
+  Future<void> _deletePenerimaan(String idPenerimaan) async {
+    setState(() => _deletingId = idPenerimaan);
+    try {
+      await PenerimaanService.deletePenerimaan(idPenerimaan);
+      setState(() {
+        _listPenerimaan.removeWhere((po) => po['id_penerimaan'] == idPenerimaan);
+        _filteredList.removeWhere((po) => po['id_penerimaan'] == idPenerimaan);
+      });
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const ConfirmationDialog(
+          isSuccess: true,
+          title: 'Data Berhasil Dihapus!',
+          message: 'Data penerimaan berhasil dihapus.',
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _deletingId = null);
+    }
+  }
+
   void _filterList(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredList = List.from(_listSelesai);
+        _filteredList = List.from(_listPenerimaan);
       } else {
-        _filteredList = _listSelesai.where((item) {
+        _filteredList = _listPenerimaan.where((item) {
           return item.values.any((value) {
             return value.toString().toLowerCase().contains(query.toLowerCase());
           });
@@ -97,7 +134,76 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? (_startDate ?? now) : (_endDate ?? now),
+      firstDate: DateTime(2020),
+      lastDate: now,
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+          _startDateController.text = '${picked.day}/${picked.month}/${picked.year}';
+        } else {
+          _endDate = picked;
+          _endDateController.text = '${picked.day}/${picked.month}/${picked.year}';
+        }
+      });
+      _fetchPenerimaan();
+    }
+  }
+
+  Widget _buildDateField({required TextEditingController controller, required String hint, required bool isStart}) {
+    return TextField(
+      controller: controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(Icons.calendar_today, size: 16),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.blue),
+        ),
+      ),
+      onTap: () => _pickDate(isStart: isStart),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: _filterList,
+      decoration: InputDecoration(
+        hintText: 'Cari ID Penerimaan...',
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.blue),
+        ),
+      ),
+    );
   }
 
   @override
@@ -118,30 +224,45 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
           const GlobalAppBar(title: 'Penerimaan Barang'),
           const SizedBox(height: 20),
 
-          // --- SEARCH BAR ---
-          TextField(
-            controller: _searchController,
-            onChanged: _filterList,
-            decoration: InputDecoration(
-              hintText: 'Cari ID Penerimaan...',
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.blue),
-              ),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= 900) {
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 150,
+                      child: _buildDateField(controller: _startDateController, hint: 'Tgl Mulai', isStart: true),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 150,
+                      child: _buildDateField(controller: _endDateController, hint: 'Tgl Akhir', isStart: false),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildSearchField()),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(child: _buildDateField(controller: _startDateController, hint: 'Tgl Mulai', isStart: true)),
+                      const SizedBox(width: 8),
+                      Flexible(child: _buildDateField(controller: _endDateController, hint: 'Tgl Akhir', isStart: false)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSearchField(),
+                ],
+              );
+            },
           ),
 
           const SizedBox(height: 20),
 
-          // --- TABEL DATA ---
           Expanded(
             child: GlobalDataTable(
               columns: const [
@@ -149,7 +270,6 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
                 DataColumn(label: Text('ID Penerimaan')),
                 DataColumn(label: Text('ID Pembelian')),
                 DataColumn(label: Text('Tanggal Terima')),
-                DataColumn(label: Text('Status')),
                 DataColumn(label: Text('Action')),
               ],
               rows: _filteredList.map((po) {
@@ -157,9 +277,8 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
                   context,
                   po['no'] as String,
                   po['id_penerimaan'] as String,
-                  po['id'] as String,
+                  po['id_pembelian'] as String,
                   po['tanggal'] as String,
-                  po['status'] as String,
                 );
               }).toList(),
             ),
@@ -169,14 +288,12 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
     );
   }
 
-  // --- WIDGET HELPER TABEL (UI TIDAK DIUBAH) ---
   DataRow _buildDataRow(
     BuildContext context,
     String no,
     String idPenerimaan,
     String idPembelian,
     String tanggal,
-    String status,
   ) {
     return DataRow(
       cells: [
@@ -187,33 +304,43 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold))),
         DataCell(Text(tanggal)),
         DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Selesai',
-              style: TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13),
-            ),
-          ),
-        ),
-        DataCell(
-          IconButton(
-            icon: const Icon(Icons.visibility_outlined, color: Colors.purple),
-            tooltip: 'Lihat Detail Penerimaan',
-            onPressed: () {
-              Navigator.pushReplacementNamed(
-                context,
-                AppRoute.detailPenerimaan,
-                arguments: idPenerimaan, // 🔥 kirim ID ke detail
-              );
-            },
-            splashRadius: 20,
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.visibility_outlined, color: Colors.purple),
+                tooltip: 'Lihat Detail Penerimaan',
+                onPressed: () {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    AppRoute.detailPenerimaan,
+                    arguments: idPenerimaan,
+                  );
+                },
+                splashRadius: 20,
+              ),
+              if (_deletingId == idPenerimaan)
+                const SizedBox(
+                  width: 24, height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  tooltip: 'Hapus Penerimaan',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => DeleteConfirmationDialog(
+                        message: 'Hapus penerimaan "$idPenerimaan"?',
+                        onConfirmDelete: () {
+                          _deletePenerimaan(idPenerimaan);
+                        },
+                      ),
+                    );
+                  },
+                  splashRadius: 20,
+                ),
+            ],
           ),
         ),
       ],

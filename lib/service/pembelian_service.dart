@@ -29,10 +29,18 @@ class PembelianService {
     int limit = 10,
     int offset = 0,
     String status = '',
+    String? startDate,
+    String? endDate,
   }) async {
     String url = "$baseUrl?limit=$limit&offset=$offset";
     if (status.isNotEmpty) {
       url += "&status=$status";
+    }
+    if (startDate != null && startDate.isNotEmpty) {
+      url += "&start_date=$startDate";
+    }
+    if (endDate != null && endDate.isNotEmpty) {
+      url += "&end_date=$endDate";
     }
 
     final res = await http.get(
@@ -52,7 +60,7 @@ class PembelianService {
             'id': item['id_pembelian'].toString(),
             'supplier': item['id_supplier'].toString(),
             'tanggal': PembelianService.formatDate(item['tanggal_pembelian']),
-            'status': item['status'] == 'selesai' ? 'Selesai' : 'Proses',
+            'status': item['status'] ?? 'Baru',
             'created_at': item ['created_at'],
           };
         }),

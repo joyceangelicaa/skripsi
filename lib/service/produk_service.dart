@@ -16,12 +16,14 @@ class ProdukService {
     int limit = 10,
     int offset = 0,
   }) async {
+    final uri = Uri.parse("$baseUrl/produk?limit=$limit&offset=$offset");
+    print("📡 GET produk → $uri");
     final response = await http
-        .get(
-          Uri.parse("$baseUrl/produk?limit=$limit&offset=$offset"),
-          headers: _authHeaders(),
-        )
+        .get(uri, headers: _authHeaders())
         .timeout(const Duration(seconds: 10));
+
+    print("📡 Status: ${response.statusCode}");
+    print("📡 Response: ${response.body}");
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as List<dynamic>;

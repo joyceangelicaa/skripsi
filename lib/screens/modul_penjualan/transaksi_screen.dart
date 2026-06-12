@@ -50,8 +50,14 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
   }
 
   String formatRupiah(dynamic number) {
-    if (number == null) return "Rp 0";
-    return "Rp ${number.toString()}";
+    if (number == null) return 'Rp 0';
+    final str = number.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
   Future<void> _deletePenjualan(String nomerPenjualan, String namaCustomer) async {

@@ -56,7 +56,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
             children: [
               _buildField(label: 'Kode Produk', controller: kode),
               _buildField(label: 'Nama Produk', controller: nama),
-              _buildField(label: 'Harga Jual', controller: harga, isNumber: true),
+              _buildField(label: 'Harga Jual', controller: harga, isNumber: true, prefix: 'Rp '),
               Row(
                 children: [
                   Expanded(
@@ -162,6 +162,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
     required String label,
     required TextEditingController controller,
     bool isNumber = false,
+    String? prefix,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -174,6 +175,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
             controller: controller,
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             decoration: InputDecoration(
+              prefixText: prefix,
               filled: true,
               fillColor: Colors.grey.shade50,
               contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),

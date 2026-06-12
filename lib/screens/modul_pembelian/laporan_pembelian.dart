@@ -388,12 +388,7 @@ class _LaporanPembelianScreenState extends State<LaporanPembelianScreen> {
                     rows: List.generate(_filteredItems.length, (index) {
                       final item = _filteredItems[index];
 
-                      String status = item["status"] ?? "proses";
-
-                      // mapping status biar sesuai UI kamu
-                      String statusText = "Proses";
-                      if (status == "selesai") statusText = "Selesai";
-                      if (status == "proses") statusText = "Proses";
+                      String statusText = item["status"] ?? "Baru";
 
                       return _buildDataRow(
                         (index + 1).toString(),

@@ -89,6 +89,16 @@ class _ViewTransaksiScreenState extends State<ViewTransaksiScreen> {
     }
   }
 
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
+  }
+
   String _getNamaProduk(String kode) {
     try {
       final p = _produkList.firstWhere((p) => p['kode_produk'] == kode);
@@ -187,9 +197,9 @@ class _ViewTransaksiScreenState extends State<ViewTransaksiScreen> {
                               const SizedBox(width: 15),
                               Expanded(flex: 3, child: _buildDisabledInput(_getNamaProduk(d['kode_produk'] ?? ''))),
                               const SizedBox(width: 15),
-                              Expanded(flex: 2, child: _buildDisabledInput(d['harga_jual'].toString())),
+                              Expanded(flex: 2, child: _buildDisabledInput(_formatRupiah((d['harga_jual'] ?? 0).toDouble()))),
                               const SizedBox(width: 15),
-                              Expanded(flex: 2, child: _buildDisabledInput(d['total_harga_detail'].toString(), prefix: 'Rp ')),
+                              Expanded(flex: 2, child: _buildDisabledInput(_formatRupiah((d['total_harga_detail'] ?? 0).toDouble()))),
                               const SizedBox(width: 40),
                             ],
                           ),
@@ -211,7 +221,7 @@ class _ViewTransaksiScreenState extends State<ViewTransaksiScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Total Harga', style: TextStyle(fontSize: 16)),
-                                Text('Rp ${_subtotal.toStringAsFixed(0)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                                Text(_formatRupiah(_subtotal), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
                               ],
                             ),
                             const SizedBox(height: 15),
@@ -223,7 +233,7 @@ class _ViewTransaksiScreenState extends State<ViewTransaksiScreen> {
                                   width: 150,
                                   height: 40,
                                   child: TextField(
-                                    controller: TextEditingController(text: _diskon.toStringAsFixed(0)),
+                                    controller: TextEditingController(text: _formatRupiah(_diskon)),
                                     readOnly: true,
                                     textAlign: TextAlign.right,
                                     decoration: InputDecoration(
@@ -242,7 +252,7 @@ class _ViewTransaksiScreenState extends State<ViewTransaksiScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Total Akhir', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                Text('Rp ${_totalAkhir.toStringAsFixed(0)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                Text(_formatRupiah(_totalAkhir), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
                               ],
                             ),
                             const SizedBox(height: 25),

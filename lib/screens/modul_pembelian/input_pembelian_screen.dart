@@ -14,8 +14,6 @@ class InputPembelianScreen extends StatefulWidget {
 }
 
 class _InputPembelianState extends State<InputPembelianScreen> {
-  String? _generatedIdPembelian;
-
   String get _tanggalDisplay {
     final now = DateTime.now();
     return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
@@ -37,7 +35,6 @@ class _InputPembelianState extends State<InputPembelianScreen> {
 
   // 2. State untuk Supplier
   String? _selectedSupplierId;
-  String _leadTime = '-';
   List<dynamic> _suppliers = [];
 
   // 3. State untuk Produk
@@ -51,8 +48,6 @@ class _InputPembelianState extends State<InputPembelianScreen> {
       'barang': '',
       'qty_controller': TextEditingController(),
       'harga_controller': TextEditingController(),
-      'stok': '-',
-      'rop': '-',
     }
   ];
 
@@ -99,8 +94,6 @@ class _InputPembelianState extends State<InputPembelianScreen> {
         'barang': '',
         'qty_controller': TextEditingController(),
         'harga_controller': TextEditingController(),
-        'stok': '-',
-        'rop': '-',
       });
     });
   }
@@ -189,7 +182,6 @@ class _InputPembelianState extends State<InputPembelianScreen> {
       // }
 
       final generatedId = await PembelianService.addPembelian(idSupplier: idSupplier);
-      if (mounted) setState(() => _generatedIdPembelian = generatedId);
 
       final detailPayload = details.map((d) => {
         'id_pembelian': generatedId,
@@ -275,21 +267,8 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // --- HEADER PEMBELIAN ---
-                    Row(
-                      children: [
-                        Expanded(child: _buildReadOnlyField(label: 'ID Pembelian', value: _generatedIdPembelian ?? 'ID akan terbuat otomatis')),
-                        const SizedBox(width: 20),
-                        Expanded(child: _buildReadOnlyField(label: 'Tanggal Pembelian', value: _tanggalDisplay)),
-                      ],
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 2, child: _buildSupplierDropdown()),
-                        const SizedBox(width: 20),
-                        Expanded(flex: 1, child: _buildReadOnlyField(label: 'Lead Time', value: _leadTime)),
-                      ],
-                    ),
+                    _buildReadOnlyField(label: 'Tanggal Pembelian', value: _tanggalDisplay),
+                    _buildSupplierDropdown(),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 10.0),
                       child: Divider(color: Colors.grey, thickness: 0.5),
@@ -321,10 +300,6 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                       children: [
                         Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
                         const SizedBox(width: 15),
-                        Expanded(flex: 1, child: Text('ROP', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
-                        Expanded(flex: 1, child: Text('Stok', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
                         Expanded(flex: 1, child: Text('Hrg', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
                         const SizedBox(width: 15),
                         Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
@@ -341,7 +316,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         const Text('Total Harga: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Rp ${_totalHarga.toString()}',
+                        Text(_formatRupiah(_totalHarga),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
                       ],
                     ),
@@ -415,9 +390,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
               final match = _suppliers.firstWhere((s) => s['nama_supplier'] == selection);
               setState(() {
                 _selectedSupplierId = match['id_supplier'].toString();
-                _leadTime = '${match['lead_time'] ?? '-'} Hari';
               });
-              // _generateIdPembelian(int.parse(match['id_supplier'].toString()));
             },
             fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
               return TextField(
@@ -457,8 +430,6 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                 setState(() {
                   item['kode_produk'] = match['kode_produk'];
                   item['barang'] = selection;
-                  item['stok'] = '${match['stok_produk'] ?? '-'}';
-                  item['rop'] = '${match['reorder_point'] ?? '-'}';
                 });
               },
               fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
@@ -480,32 +451,10 @@ class _InputPembelianState extends State<InputPembelianScreen> {
           Expanded(
             flex: 1,
             child: TextField(
-              controller: TextEditingController(text: item['rop']),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: TextEditingController(text: item['stok']),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            flex: 1,
-            child: TextField(
               controller: item['harga_controller'],
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              decoration: _inputStyle().copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), hintText: '0'),
+              decoration: _inputStyle().copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), hintText: '0', prefixText: 'Rp '),
               onChanged: (_) => setState(() {}),
             ),
           ),
@@ -550,6 +499,16 @@ class _InputPembelianState extends State<InputPembelianScreen> {
         ],
       ),
     );
+  }
+
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
   InputDecoration _inputStyle({bool readOnly = false}) {

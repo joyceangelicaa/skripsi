@@ -76,8 +76,7 @@ class LaporanPembelianPdfService {
                 ),
                 ...List.generate(items.length, (index) {
                   final item = items[index];
-                  String statusText = "Proses";
-                  if (item["status"] == "selesai") statusText = "Selesai";
+                  String statusText = item["status"] ?? "Baru";
                   final cells = [
                     '${index + 1}',
                     item["id_pembelian"]?.toString() ?? '-',

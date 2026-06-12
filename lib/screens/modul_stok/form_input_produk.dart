@@ -38,7 +38,7 @@ class _FormInputProdukState extends State<FormInputProduk> {
             children: [
               _buildField(label: 'Kode Produk', hint: 'Contoh: BRG-001', controller: kodeController),
               _buildField(label: 'Nama Produk', hint: 'Masukkan nama barang', controller: namaController),
-              _buildField(label: 'Harga Jual', hint: 'Masukkan harga jual', isNumber: true, controller: hargaController),
+              _buildField(label: 'Harga Jual', hint: 'Masukkan harga jual', isNumber: true, controller: hargaController, prefix: 'Rp '),
               Row(
                 children: [
                   Expanded(
@@ -137,6 +137,7 @@ class _FormInputProdukState extends State<FormInputProduk> {
     required String hint,
     required TextEditingController controller,
     bool isNumber = false,
+    String? prefix,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -150,6 +151,7 @@ class _FormInputProdukState extends State<FormInputProduk> {
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             decoration: InputDecoration(
               hintText: hint,
+              prefixText: prefix,
               filled: true,
               fillColor: Colors.grey.shade50,
               contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),

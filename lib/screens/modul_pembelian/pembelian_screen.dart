@@ -21,7 +21,12 @@ class _PembelianScreenState extends State<PembelianScreen> {
   Map<String, String> _supplierMap = {};
   bool _isLoading = true;
   String? _deletingId;
+  String? _selectedStatus;
+  DateTime? _startDate;
+  DateTime? _endDate;
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
 
   @override
   void initState() {
@@ -34,8 +39,17 @@ class _PembelianScreenState extends State<PembelianScreen> {
   // =========================
   Future<void> _fetchPembelian() async {
     try {
+      String? startStr;
+      String? endStr;
+      if (_startDate != null) {
+        startStr = '${_startDate!.year}-${_startDate!.month.toString().padLeft(2, '0')}-${_startDate!.day.toString().padLeft(2, '0')}';
+      }
+      if (_endDate != null) {
+        endStr = '${_endDate!.year}-${_endDate!.month.toString().padLeft(2, '0')}-${_endDate!.day.toString().padLeft(2, '0')}';
+      }
+
       final results = await Future.wait([
-        PembelianService.getAllPembelian(limit: 999),
+        PembelianService.getAllPembelian(limit: 999, status: _selectedStatus ?? '', startDate: startStr, endDate: endStr),
         SupplierService.getAllSuppliers(limit: 999),
       ]);
 
@@ -148,7 +162,103 @@ class _PembelianScreenState extends State<PembelianScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? (_startDate ?? now) : (_endDate ?? now),
+      firstDate: DateTime(2020),
+      lastDate: now,
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+          _startDateController.text = '${picked.day}/${picked.month}/${picked.year}';
+        } else {
+          _endDate = picked;
+          _endDateController.text = '${picked.day}/${picked.month}/${picked.year}';
+        }
+      });
+      _fetchPembelian();
+    }
+  }
+
+  Widget _buildDateField({required TextEditingController controller, required String hint, required bool isStart}) {
+    return TextField(
+      controller: controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(Icons.calendar_today, size: 16),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.blue),
+        ),
+      ),
+      onTap: () => _pickDate(isStart: isStart),
+    );
+  }
+
+  Widget _buildStatusDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: _selectedStatus,
+          hint: const Text('Status'),
+          items: const [
+            DropdownMenuItem(value: null, child: Text('Semua')),
+            DropdownMenuItem(value: 'Baru', child: Text('Baru')),
+            DropdownMenuItem(value: 'Proses', child: Text('Proses')),
+            DropdownMenuItem(value: 'Selesai', child: Text('Selesai')),
+          ],
+          onChanged: (val) {
+            setState(() => _selectedStatus = val);
+            _fetchPembelian();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: _filterList,
+      decoration: InputDecoration(
+        hintText: 'Cari ID Pembelian atau Nama Supplier...',
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.blue),
+        ),
+      ),
+    );
   }
 
   @override
@@ -163,49 +273,72 @@ class _PembelianScreenState extends State<PembelianScreen> {
 
           const SizedBox(height: 20),
 
-          Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, AppRoute.inputPembelian);
-                },
-                icon: const Icon(Icons.add, size: 20),
-                label: const Text('Input Pembelian'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E293B),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _filterList,
-                  decoration: InputDecoration(
-                    hintText: 'Cari ID Pembelian atau Nama Supplier...',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= 900) {
+                return Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.pushReplacementNamed(context, AppRoute.inputPembelian),
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text('Input Pembelian'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E293B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.blue),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 150,
+                      child: _buildDateField(controller: _startDateController, hint: 'Tgl Mulai', isStart: true),
                     ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 150,
+                      child: _buildDateField(controller: _endDateController, hint: 'Tgl Akhir', isStart: false),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildStatusDropdown(),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildSearchField()),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.pushReplacementNamed(context, AppRoute.inputPembelian),
+                        icon: const Icon(Icons.add, size: 20),
+                        label: const Text('Input Pembelian'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E293B),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(child: _buildDateField(controller: _startDateController, hint: 'Tgl Mulai', isStart: true)),
+                      const SizedBox(width: 8),
+                      Flexible(child: _buildDateField(controller: _endDateController, hint: 'Tgl Akhir', isStart: false)),
+                      const SizedBox(width: 8),
+                      _buildStatusDropdown(),
+                    ],
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(height: 8),
+                  _buildSearchField(),
+                ],
+              );
+            },
           ),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 20),
 
           // =========================
           // TABLE
@@ -250,7 +383,11 @@ class _PembelianScreenState extends State<PembelianScreen> {
     String tanggal,
     String status,
   ) {
-    Color statusColor = status == 'Selesai' ? Colors.green : Colors.orange;
+    Color statusColor = switch (status) {
+      'Baru' => Colors.blue,
+      'Selesai' => Colors.green,
+      _ => Colors.orange,
+    };
 
     return DataRow(
       cells: [
@@ -281,7 +418,7 @@ class _PembelianScreenState extends State<PembelianScreen> {
                 },
               ),
 
-              if (status == 'Proses') ...[
+              if (status == 'Baru') ...[
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, color: Colors.blue),
                   onPressed: () {
@@ -315,6 +452,15 @@ class _PembelianScreenState extends State<PembelianScreen> {
                           );
                         },
                       ),
+              ],
+
+              if (status == 'Proses') ...[
+                IconButton(
+                  icon: const Icon(Icons.move_to_inbox_outlined, color: Colors.teal),
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, AppRoute.inputPenerimaan, arguments: idPembelian);
+                  },
+                ),
 
                 IconButton(
                   icon: const Icon(Icons.check_circle_outline, color: Colors.green),

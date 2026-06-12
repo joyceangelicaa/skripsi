@@ -228,7 +228,7 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         const Text('Total Harga: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Rp $totalHarga',
+                        Text(_formatRupiah(num.tryParse(totalHarga) ?? 0),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
                       ],
                     ),
@@ -245,8 +245,18 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
     );
   }
 
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
+  }
+
   // =========================
-  // HELPER UI (DIKEMBALIKAN KE DESAIN LAMA)
+  // HELPER UI
   // =========================
 
   Widget _buildItemRow(Map<String, dynamic> item) {
@@ -289,7 +299,7 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
           Expanded(
             flex: 1,
             child: TextField(
-              controller: TextEditingController(text: item['harga'].toString()),
+              controller: TextEditingController(text: _formatRupiah(num.tryParse(item['harga'].toString()) ?? 0)),
               readOnly: true,
               textAlign: TextAlign.center,
               decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),

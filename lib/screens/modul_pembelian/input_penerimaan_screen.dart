@@ -17,7 +17,6 @@ class InputPenerimaanScreen extends StatefulWidget {
 
 class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
   String? _idPembelianArgs;
-  String? _generatedIdPenerimaan;
   bool _isLoading = true;
 
   String tanggal = '';
@@ -29,19 +28,16 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
   List<dynamic> _suppliers = [];
   List<dynamic> _products = [];
 
-  final List<Map<String, dynamic>> _listBatch = [];
-
   @override
   void initState() {
     super.initState();
-    _tambahBatch();
   }
 
   @override
   void dispose() {
-    for (var batch in _listBatch) {
-      batch['terima_controller'].dispose();
-      batch['keterangan_controller'].dispose();
+    for (var item in items) {
+      (item['terima_controller'] as TextEditingController?)?.dispose();
+      (item['keterangan_controller'] as TextEditingController?)?.dispose();
     }
     super.dispose();
   }
@@ -87,13 +83,9 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
       final itemList = details.map((item) {
         final kode = item['kode_produk']?.toString() ?? '';
         String namaBarang = kode;
-        String rop = '-';
-        String stok = '-';
         try {
           final p = _products.firstWhere((p) => p['kode_produk'] == kode);
           namaBarang = p['nama_produk'] ?? kode;
-          rop = '${p['reorder_point'] ?? '-'}';
-          stok = '${p['stok_produk'] ?? '-'}';
         } catch (_) {}
 
         return {
@@ -101,8 +93,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
           'nama_barang': namaBarang,
           'harga': item['harga_beli'] ?? 0,
           'qty': item['quantity'] ?? 0,
-          'rop': rop,
-          'stok': stok,
+          'total_diterima': item['total_diterima'] ?? 0,
         };
       }).toList();
 
@@ -112,10 +103,12 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
         supplier = namaSupplier;
         totalHarga = pembelian['total_harga']?.toString() ?? '0';
         items = List<Map<String, dynamic>>.from(itemList);
+        for (var item in items) {
+          item['terima_controller'] = TextEditingController();
+          item['keterangan_controller'] = TextEditingController();
+        }
         _isLoading = false;
       });
-
-      await _generateIdPenerimaan();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -129,144 +122,112 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
     }
   }
 
-  void _tambahBatch() {
-    setState(() {
-      _listBatch.add({
-        'kode_produk': null,
-        'barang': '',
-        'qty_pesan': '-',
-        'preview_batch_code': null,
-        'terima_controller': TextEditingController(),
-        'keterangan_controller': TextEditingController(),
-      });
-    });
-  }
-
-  void _hapusBatch(int index) {
-    setState(() {
-      _listBatch[index]['terima_controller'].dispose();
-      _listBatch[index]['keterangan_controller'].dispose();
-      _listBatch.removeAt(index);
-    });
-  }
-
-  // =========================
-  // GENERATE ID + BATAL
-  // =========================
-  Future<void> _generateIdPenerimaan() async {
-    if (_generatedIdPenerimaan != null) return;
-    try {
-      final id = await PenerimaanService.addPenerimaan(
-        idPembelian: _idPembelianArgs!,
-        totalHarga: 0,
-      );
-      if (mounted) setState(() => _generatedIdPenerimaan = id);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal generate ID: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
   Future<void> _batal() async {
-    if (_generatedIdPenerimaan != null) {
-      await PenerimaanService.deletePenerimaan(_generatedIdPenerimaan!);
-    }
     if (mounted) {
       Navigator.pushReplacementNamed(context, AppRoute.pembelian);
     }
   }
 
-  double _getHargaSatuan(String kodeProduk) {
-    try {
-      final match = items.firstWhere((i) => i['kode_produk'] == kodeProduk);
-      return (match['harga'] as num).toDouble();
-    } catch (_) {
-      return 0;
-    }
-  }
+  // ================== VALIDASI ==================
+  String? _validate() {
+    bool adaTerima = false;
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final qty = (item['qty'] as num).toInt();
+      final diterima = (item['total_diterima'] as num).toInt();
+      final terima = int.tryParse((item['terima_controller'] as TextEditingController).text) ?? 0;
+      final sisa = qty - diterima;
 
-  Future<void> _loadPreviewBatchCode(Map<String, dynamic> item) async {
-    try {
-      final kode = await PenerimaanService.getNextBatchCode();
-      if (mounted) {
-        setState(() => item['preview_batch_code'] = kode);
+      if (terima > 0) adaTerima = true;
+
+      if (terima > sisa) {
+        final keterangan = (item['keterangan_controller'] as TextEditingController).text.trim();
+        if (keterangan.isEmpty) {
+          return 'Baris ${i + 1}: Keterangan wajib diisi karena jumlah terima ($terima) melebihi sisa ($sisa)';
+        }
       }
-    } catch (_) {}
+    }
+    if (!adaTerima) return 'Minimal satu baris harus diisi jumlah terima';
+    return null;
   }
 
-  // ================== 🔥 FUNCTION SUBMIT ==================
+  // ================== HANDLE SIMPAN (VALIDASI → KONFIRMASI → POST) ==================
+  Future<void> _handleSimpan() async {
+    final error = _validate();
+    if (error != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi'),
+        content: const Text('Apakah data penerimaan sudah benar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tidak'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E293B)),
+            child: const Text('Ya', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _submitPenerimaan();
+  }
+
+  // ================== SUBMIT (POST SAJA) ==================
   Future<void> _submitPenerimaan() async {
     try {
       if (_idPembelianArgs == null) {
         throw Exception("ID Pembelian tidak ditemukan");
       }
 
-      if (_generatedIdPenerimaan == null) {
-        throw Exception("ID Penerimaan belum digenerate");
-      }
-
+      // Hitung total_harga dari qty_terima × harga_beli
+      int totalTerima = 0;
       List<Map<String, dynamic>> details = [];
-
-      for (var batch in _listBatch) {
-        if (batch['kode_produk'] == null) continue;
-
+      for (var item in items) {
+        final terima = int.tryParse((item['terima_controller'] as TextEditingController).text) ?? 0;
+        if (terima == 0) continue;
+        final harga = (item['harga'] as num).toDouble();
+        totalTerima += (terima * harga).toInt();
         details.add({
-          "kode_produk": batch['kode_produk'],
-          "quantity_dipesan": int.tryParse(batch['qty_pesan'].toString()) ?? 0,
-          "quantity_diterima": int.tryParse(batch['terima_controller'].text) ?? 0,
-          "keterangan_barang": batch['keterangan_controller'].text
+          "kode_produk": item['kode_produk'],
+          "quantity_dipesan": (item['qty'] as num).toInt(),
+          "quantity_diterima": terima,
+          "kode_batch_penerimaan": null,
+          "keterangan_barang": (item['keterangan_controller'] as TextEditingController).text,
         });
       }
 
+      // 1. POST header dengan total yang benar
+      final idPenerimaan = await PenerimaanService.addPenerimaan(
+        idPembelian: _idPembelianArgs!,
+        totalHarga: totalTerima,
+      );
+
+      // 2. POST details
       final detailPayload = details.map((d) => {
-        'id_penerimaan': _generatedIdPenerimaan,
+        'id_penerimaan': idPenerimaan,
         'kode_produk': d['kode_produk'],
         'quantity_dipesan': d['quantity_dipesan'],
         'quantity_diterima': d['quantity_diterima'],
+        'kode_batch_penerimaan': null,
         'keterangan_barang': d['keterangan_barang'],
       }).toList();
 
-      final addResult = await PenerimaanService.addDetailPenerimaan(detailPayload);
-
-      // for (var d in details) {
-      //   await KartuStokService.addKartuStok(
-      //     kodeProduk: d['kode_produk'],
-      //     stokMasuk: d['quantity_diterima'],
-      //     keteranganBarang: "Penerimaan",
-      //   );
-      // }
-
-      final detailResults = addResult['detail_penerimaan'] as List<dynamic>? ?? [];
-
-      final editDetails = detailResults.asMap().entries.map((entry) {
-        final detail = details[entry.key];
-        return {
-          'id_detail_penerimaan': entry.value['id_detail_penerimaan'],
-          'kode_produk': detail['kode_produk'],
-          'quantity_dipesan': detail['quantity_dipesan'],
-          'quantity_diterima': detail['quantity_diterima'],
-          'keterangan_barang': detail['keterangan_barang'],
-        };
-      }).toList();
-
-      // Hitung total dari quantity_diterima × harga
-      int totalTerima = 0;
-      for (var detail in details) {
-        final terima = detail['quantity_diterima'] as int;
-        final harga = _getHargaSatuan(detail['kode_produk'] as String);
-        totalTerima += (terima * harga).toInt();
-      }
-
-      // Update header dengan total yang benar
-      await PenerimaanService.editPenerimaan(
-        idPenerimaan: _generatedIdPenerimaan!,
-        idPembelian: _idPembelianArgs!,
-        totalHarga: totalTerima,
-        details: editDetails,
-      );
+      await PenerimaanService.addDetailPenerimaan(detailPayload);
 
       if (!mounted) return;
       await showDialog(
@@ -275,7 +236,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
         builder: (context) => const ConfirmationDialog(
           isSuccess: true,
           title: 'Barang Berhasil Diterima!',
-          message: 'Data penerimaan batch telah dicatat dan stok gudang otomatis bertambah.',
+          message: 'Data penerimaan barang telah dicatat dan stok gudang otomatis bertambah.',
         ),
       );
 
@@ -344,16 +305,11 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: [
-                            Expanded(child: _buildReadOnlyField(label: 'ID Penerimaan', value: _generatedIdPenerimaan ?? '-')),
-                            const SizedBox(width: 20),
-                            Expanded(child: _buildReadOnlyField(label: 'Tanggal Terima', value: tanggal)),
-                          ],
-                        ),
-                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(flex: 2, child: _buildReadOnlyField(label: 'ID Pembelian (PO)', value: idPembelian)),
+                            const SizedBox(width: 20),
+                            Expanded(flex: 1, child: _buildReadOnlyField(label: 'Tanggal Terima', value: tanggal)),
                             const SizedBox(width: 20),
                             Expanded(flex: 1, child: _buildReadOnlyField(label: 'Supplier', value: supplier)),
                           ],
@@ -364,7 +320,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
 
                   const SizedBox(height: 25),
 
-                  // --- SECTION 2: DATA PEMBELIAN (READ-ONLY) ---
+                  // --- MERGED SECTION: DATA PENERIMAAN BARANG ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24.0),
@@ -379,7 +335,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Data Pembelian',
+                          'Data Penerimaan Barang',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
                         ),
                         const SizedBox(height: 15),
@@ -387,13 +343,15 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                           children: [
                             Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
                             const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('ROP', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('Stok', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
                             Expanded(flex: 1, child: Text('Harga', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
                             const SizedBox(width: 15),
                             Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                            const SizedBox(width: 15),
+                            Expanded(flex: 1, child: Text('Diterima', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                            const SizedBox(width: 15),
+                            Expanded(flex: 1, child: Text('Terima', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                            const SizedBox(width: 15),
+                            Expanded(flex: 3, child: Text('Keterangan Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -415,32 +373,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                                 Expanded(
                                   flex: 1,
                                   child: TextField(
-                                    controller: TextEditingController(text: item['rop'].toString()),
-                                    readOnly: true,
-                                    textAlign: TextAlign.center,
-                                    decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                                const SizedBox(width: 15),
-                                Expanded(
-                                  flex: 1,
-                                  child: TextField(
-                                    controller: TextEditingController(text: item['stok'].toString()),
-                                    readOnly: true,
-                                    textAlign: TextAlign.center,
-                                    decoration: _inputStyle(readOnly: true).copyWith(
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                      fillColor: Colors.blue.shade50,
-                                    ),
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                                  ),
-                                ),
-                                const SizedBox(width: 15),
-                                Expanded(
-                                  flex: 1,
-                                  child: TextField(
-                                    controller: TextEditingController(text: item['harga'].toString()),
+                                    controller: TextEditingController(text: _formatRupiah((item['harga'] as num).toDouble())),
                                     readOnly: true,
                                     textAlign: TextAlign.center,
                                     decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
@@ -461,90 +394,53 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                                     style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 16),
                                   ),
                                 ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  flex: 1,
+                                  child: TextField(
+                                    controller: TextEditingController(text: item['total_diterima'].toString()),
+                                    readOnly: true,
+                                    textAlign: TextAlign.center,
+                                    decoration: _inputStyle(readOnly: true).copyWith(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                      fillColor: Colors.orange.shade50,
+                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  flex: 1,
+                                  child: TextField(
+                                    controller: item['terima_controller'],
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    decoration: _inputStyle().copyWith(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                      hintText: '0',
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: const BorderSide(color: Colors.green, width: 2),
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  flex: 3,
+                                  child: TextField(
+                                    controller: item['keterangan_controller'],
+                                    decoration: _inputStyle().copyWith(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                      hintText: 'Catatan...',
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           );
                         }).toList(),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            const Text('Total Harga: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text('Rp $totalHarga',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Divider(color: Colors.grey.shade300, thickness: 1),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // --- SECTION 3: BATCH CRUD ---
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Daftar Penerimaan Barang',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: _tambahBatch,
-                              icon: const Icon(Icons.add, size: 20),
-                              label: const Text('Input Batch', style: TextStyle(fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E293B),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 15),
-                        Row(
-                          children: [
-                            Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 3, child: Text('Nomor Batch', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('Qty Pesan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('Qty Terima', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 4, child: Text('Keterangan Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 58),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        if (_listBatch.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: Center(
-                              child: Text('Belum ada batch yang diinput. Klik "Input Batch" untuk menambahkan.',
-                                style: TextStyle(color: Colors.grey)),
-                            ),
-                          )
-                        else
-                          ...List.generate(_listBatch.length, (index) {
-                            return _buildBatchRow(index);
-                          }),
                         const SizedBox(height: 20),
                         Divider(color: Colors.grey.shade300, thickness: 1),
                         const SizedBox(height: 20),
@@ -552,7 +448,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             OutlinedButton(
-            onPressed: _batal,
+              onPressed: _batal,
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                                 side: BorderSide(color: Colors.grey.shade400),
@@ -562,7 +458,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                             ),
                             const SizedBox(width: 15),
                             ElevatedButton(
-                              onPressed: _submitPenerimaan,
+                              onPressed: _handleSimpan,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF1E293B),
                                 foregroundColor: Colors.white,
@@ -578,126 +474,6 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBatchRow(int index) {
-    var item = _listBatch[index];
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15.0),
-      child: Row(
-        children: [
-          // KOLOM 1: Nama Barang
-          Expanded(
-            flex: 3,
-            child: Autocomplete<String>(
-              optionsBuilder: (textEditingValue) {
-                if (textEditingValue.text.isEmpty) {
-                  return items.map((p) => p['nama_barang']?.toString() ?? '')
-                      .where((n) => n.isNotEmpty);
-                }
-                final query = textEditingValue.text.toLowerCase();
-                return items.map((p) => p['nama_barang']?.toString() ?? '')
-                    .where((n) => n.isNotEmpty && n.toLowerCase().contains(query));
-              },
-              onSelected: (selection) {
-                final match = items.firstWhere((p) => p['nama_barang'] == selection);
-                setState(() {
-                  item['kode_produk'] = match['kode_produk'];
-                  item['barang'] = selection;
-                  item['qty_pesan'] = match['qty'].toString();
-                });
-                _loadPreviewBatchCode(item);
-              },
-              fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
-                if (textEditingController.text.isEmpty && (item['barang'] ?? '').isNotEmpty) {
-                  textEditingController.text = item['barang'];
-                }
-                return TextField(
-                  controller: textEditingController,
-                  focusNode: focusNode,
-                  decoration: _inputStyle().copyWith(
-                    hintText: 'Cari Barang...',
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                  ),
-                  onChanged: (val) {
-                    item['barang'] = val;
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 15),
-          // KOLOM 2: Nomor Batch (read-only — preview dari API)
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: TextEditingController(text: item['preview_batch_code'] ?? 'Pilih Barang...'),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                fillColor: Colors.grey.shade200,
-              ),
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14),
-            ),
-          ),
-          const SizedBox(width: 15),
-          // KOLOM 3: Quantity Dipesan (read-only)
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: TextEditingController(text: item['qty_pesan']),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                fillColor: Colors.blue.shade50,
-              ),
-              style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 16),
-            ),
-          ),
-          const SizedBox(width: 15),
-          // KOLOM 4: Quantity Dibeli (input — terima_controller)
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: item['terima_controller'],
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle().copyWith(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                hintText: '0',
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.green, width: 2),
-                ),
-              ),
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-            ),
-          ),
-          const SizedBox(width: 15),
-          // KOLOM 5: Keterangan Barang (input — keterangan_controller)
-          Expanded(
-            flex: 4,
-            child: TextField(
-              controller: item['keterangan_controller'],
-              decoration: _inputStyle().copyWith(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                hintText: 'Catatan...',
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 48,
-            child: IconButton(
-              onPressed: () => _hapusBatch(index),
-              icon: const Icon(Icons.delete, color: Colors.red),
             ),
           ),
         ],
@@ -722,6 +498,16 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
         ],
       ),
     );
+  }
+
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
   InputDecoration _inputStyle({bool readOnly = false}) {

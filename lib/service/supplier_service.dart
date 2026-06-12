@@ -16,12 +16,14 @@ class SupplierService {
     int limit = 10,
     int offset = 0,
   }) async {
+    final uri = Uri.parse('$baseUrl?limit=$limit&offset=$offset');
+    print("📡 GET supplier → $uri");
     final response = await http
-        .get(
-          Uri.parse('$baseUrl?limit=$limit&offset=$offset'),
-          headers: _authHeaders(),
-        )
+        .get(uri, headers: _authHeaders())
         .timeout(const Duration(seconds: 10));
+
+    print("📡 Status: ${response.statusCode}");
+    print("📡 Response: ${response.body}");
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);

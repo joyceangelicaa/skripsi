@@ -72,6 +72,16 @@ class _ProdukScreenState extends State<ProdukScreen> {
     super.dispose();
   }
 
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -144,6 +154,7 @@ class _ProdukScreenState extends State<ProdukScreen> {
                           DataColumn(label: Text('No')),
                           DataColumn(label: Text('Nama Barang')),
                           DataColumn(label: Text('Jumlah Stock')),
+                          DataColumn(label: Text('Harga Jual')),
                           DataColumn(label: Text('ROP')),
                           DataColumn(label: Text('Status Barang')),
                           DataColumn(label: Text('Action')),
@@ -164,6 +175,7 @@ class _ProdukScreenState extends State<ProdukScreen> {
                             (index + 1).toString(),
                             item['nama_produk'],
                             item['stok_produk'].toString(),
+                            _formatRupiah((item['harga_jual'] ?? 0).toDouble()),
                             item['reorder_point'].toString(),
                             status,
                             item,
@@ -181,6 +193,7 @@ class _ProdukScreenState extends State<ProdukScreen> {
     String no,
     String nama,
     String stok,
+    String harga,
     String rop,
     String status,
     dynamic item,
@@ -194,6 +207,7 @@ class _ProdukScreenState extends State<ProdukScreen> {
         DataCell(Text(no)),
         DataCell(Text(nama)),
         DataCell(Text(stok)),
+        DataCell(Text(harga)),
         DataCell(Text(rop)),
         DataCell(
           Container(

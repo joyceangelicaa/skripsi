@@ -150,9 +150,6 @@ class _SidebarState extends State<Sidebar> {
                     _buildSubMenu(title: 'Supplier', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.supplier);
                     }),
-                    _buildSubMenu(title: 'Laporan Pembelian', onTap: () {
-                      Navigator.pushReplacementNamed(context, AppRoute.laporanPembelian);
-                    }),
                     // _buildSubMenu(title: 'Kartu Stok', onTap: () {}),
                   ],
                 ),
@@ -171,9 +168,6 @@ class _SidebarState extends State<Sidebar> {
                     }),
                     // _buildSubMenu(title: 'Kartu Stok', onTap: () {}),
                     // _buildSubMenu(title: 'Produk', onTap: () {}),
-                    _buildSubMenu(title: 'Laporan Penjualan', onTap: () {
-                      Navigator.pushReplacementNamed(context, AppRoute.laporanPenjualan);
-                    }),
                   ],
                 ),
               ],
@@ -378,9 +372,6 @@ class _SidebarState extends State<Sidebar> {
                     _buildSubMenu(title: 'Supplier', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.supplier);
                     }),
-                    _buildSubMenu(title: 'Laporan', onTap: () {
-                      Navigator.pushReplacementNamed(context, AppRoute.laporanPembelian);
-                    }),
                   ],
                 ),
 
@@ -395,9 +386,6 @@ class _SidebarState extends State<Sidebar> {
                     }),
                     _buildSubMenu(title: 'Customer', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.customer);
-                    }),
-                    _buildSubMenu(title: 'Laporan', onTap: () {
-                      Navigator.pushReplacementNamed(context, AppRoute.laporanPenjualan);
                     }),
                   ],
                 ),

@@ -345,7 +345,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             const Text('Total Harga: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text('Rp ${_totalHarga.toString()}',
+                            Text(_formatRupiah(_totalHarga),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
                           ],
                         ),
@@ -389,6 +389,16 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
         ],
       ),
     );
+  }
+
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
   // --- HELPER WIDGETS ---
@@ -461,7 +471,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
               controller: item['harga_controller'],
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              decoration: _inputStyle().copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), hintText: '0'),
+              decoration: _inputStyle().copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), hintText: '0', prefixText: 'Rp '),
               onChanged: (_) => setState(() {}),
             ),
           ),

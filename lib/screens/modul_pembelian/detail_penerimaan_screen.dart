@@ -22,7 +22,6 @@ class _DetailPenerimaanScreenState extends State<DetailPenerimaanScreen> {
   String idPembelian = '';
   String supplier = '';
   String totalHarga = '0';
-  String status = '';
 
   List<Map<String, dynamic>> details = [];
 
@@ -105,7 +104,6 @@ class _DetailPenerimaanScreenState extends State<DetailPenerimaanScreen> {
           idPembelian = idPembelianValue;
           supplier = namaSupplier;
           totalHarga = penerimaan['total_harga']?.toString() ?? '0';
-          status = penerimaan['status'] ?? '';
           details = List<Map<String, dynamic>>.from(detailList);
           _isLoading = false;
         });
@@ -199,13 +197,7 @@ class _DetailPenerimaanScreenState extends State<DetailPenerimaanScreen> {
                       ],
                     ),
 
-                    Row(
-                      children: [
-                        Expanded(child: _buildReadOnlyField(label: 'Total Harga', value: 'Rp $totalHarga')),
-                        const SizedBox(width: 20),
-                        Expanded(child: _buildReadOnlyField(label: 'Status', value: status)),
-                      ],
-                    ),
+                    _buildReadOnlyField(label: 'Total Harga', value: _formatRupiah(num.tryParse(totalHarga) ?? 0)),
 
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 10.0),
@@ -364,6 +356,16 @@ class _DetailPenerimaanScreenState extends State<DetailPenerimaanScreen> {
         ],
       ),
     );
+  }
+
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
   InputDecoration _inputStyle({bool readOnly = false}) {

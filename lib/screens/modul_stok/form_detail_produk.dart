@@ -14,6 +14,16 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
   Map<String, dynamic>? produk;
   bool isLoading = true;
 
+  String _formatRupiah(num value) {
+    final str = value.toStringAsFixed(0).split('').reversed.toList();
+    final buffer = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && i % 3 == 0) buffer.write('.');
+      buffer.write(str[i]);
+    }
+    return 'Rp ${buffer.toString().split('').reversed.join()}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +100,7 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
             children: [
               _buildReadOnlyField(label: 'Kode Produk', value: p['kode_produk']?.toString() ?? '-'),
               _buildReadOnlyField(label: 'Nama Produk', value: p['nama_produk'] ?? '-'),
-              _buildReadOnlyField(label: 'Harga Jual', value: 'Rp ${p['harga_jual']?.toString() ?? '0'}'),
+              _buildReadOnlyField(label: 'Harga Jual', value: _formatRupiah((p['harga_jual'] ?? 0).toDouble())),
               Row(
                 children: [
                   Expanded(child: _buildReadOnlyField(label: 'Stok', value: stok.toString())),
