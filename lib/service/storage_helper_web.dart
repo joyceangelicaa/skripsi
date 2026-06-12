@@ -1,0 +1,16 @@
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+
+class StorageHelper {
+  static Future<void> save(String key, String value) async {
+    html.window.localStorage[key] = value;
+  }
+
+  static Future<String?> get(String key) async {
+    return html.window.localStorage[key];
+  }
+
+  static Future<void> remove(String key) async {
+    html.window.localStorage.remove(key);
+  }
+}
