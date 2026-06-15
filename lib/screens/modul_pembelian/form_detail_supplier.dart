@@ -266,7 +266,7 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
       ],
       rows: List.generate(produkList.length, (index) {
         final item = produkList[index];
-        final harga = item['harga'] as List<dynamic>? ?? [];
+        final harga = item['harga_terakhir'] as List<dynamic>? ?? [];
         return DataRow(cells: [
           DataCell(Text('${index + 1}')),
           DataCell(Text(item['nama_produk']?.toString() ?? '-',

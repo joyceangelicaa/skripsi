@@ -59,9 +59,9 @@ class _DetailPenerimaanScreenState extends State<DetailPenerimaanScreen> {
 
   Future<void> _fetchDetail() async {
     try {
-      final data = await PenerimaanService.getDetailPenerimaan(_idPenerimaan!);
-
-      final penerimaan = data['penerimaan'] ?? data;
+      final responseData = await PenerimaanService.getDetailPenerimaan(_idPenerimaan!);
+      final body = responseData['data'] as Map<String, dynamic>? ?? responseData;
+      final penerimaan = body['penerimaan'] ?? body;
       final idPembelianValue = penerimaan['id_pembelian']?.toString() ?? '';
 
       // Fetch supplier dari pembelian
@@ -78,7 +78,7 @@ class _DetailPenerimaanScreenState extends State<DetailPenerimaanScreen> {
         }
       } catch (_) {}
 
-      final rawDetails = data['details'] ?? [];
+      final rawDetails = body['details'] ?? [];
       final detailList = rawDetails.map((item) {
         final kode = item['kode_produk']?.toString() ?? '';
         String namaBarang = kode;
