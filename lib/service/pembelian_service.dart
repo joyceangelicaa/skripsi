@@ -73,6 +73,31 @@ class PembelianService {
   }
 
   // =========================
+  // GET PEMBELIAN BY SUPPLIER
+  // =========================
+  static Future<List<dynamic>> getPembelianBySupplier({
+    required int idSupplier,
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse(
+        "$baseUrl/supplier/$idSupplier?limit=$limit&offset=$offset");
+    print("📡 GET pembelian by supplier → $uri");
+
+    final response = await http
+        .get(uri, headers: _authHeaders())
+        .timeout(const Duration(seconds: 10));
+
+    print("📡 Status: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as List<dynamic>;
+    } else {
+      throw Exception('Gagal ambil pembelian by supplier (${response.statusCode})');
+    }
+  }
+  
+  // =========================
   // GET DETAIL PEMBELIAN
   // =========================
   static Future<Map<String, dynamic>> getDetailPembelian(String idPembelian) async {

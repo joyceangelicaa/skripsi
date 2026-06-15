@@ -33,6 +33,33 @@ class ProdukService {
     }
   }
 
+  // =========================
+  // GET ALL PRODUK BY SUPPLIER
+  // =========================
+
+  static Future<List<dynamic>> getProdukBySupplier({
+    required int idSupplier,
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse(
+        "$baseUrl/produk/supplier/$idSupplier?limit=$limit&offset=$offset");
+    print("📡 GET produk by supplier → $uri");
+
+    final response = await http
+        .get(uri, headers: _authHeaders())
+        .timeout(const Duration(seconds: 10));
+
+    print("📡 Status: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
+    } else {
+      throw Exception('Gagal ambil produk by supplier (${response.statusCode})');
+    }
+  }
+
   static Future<Map<String, dynamic>> getDetailProduk(String kode) async {
     final response = await http
         .get(
