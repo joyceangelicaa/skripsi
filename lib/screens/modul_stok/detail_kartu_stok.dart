@@ -19,6 +19,8 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
 
   String kodeProduk = "";
   String namaBarang = "-";
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void didChangeDependencies() {
@@ -82,6 +84,53 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
     return "${date.day.toString().padLeft(2, '0')}/"
         "${date.month.toString().padLeft(2, '0')}/"
         "${date.year}";
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    data.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['created_at'] ?? '').toString().compareTo(
+              (b['created_at'] ?? '').toString());
+          break;
+        case 2:
+          result = (a['produk']?['nama_produk'] ?? '').toString().compareTo(
+              (b['produk']?['nama_produk'] ?? '').toString());
+          break;
+        case 3:
+          result = (a['keterangan_barang'] ?? '').toString().compareTo(
+              (b['keterangan_barang'] ?? '').toString());
+          break;
+        case 4:
+          result = ((a['stok_masuk'] ?? 0) as num)
+              .compareTo((b['stok_masuk'] ?? 0) as num);
+          break;
+        case 5:
+          result = ((a['stok_keluar'] ?? 0) as num)
+              .compareTo((b['stok_keluar'] ?? 0) as num);
+          break;
+        case 6:
+          result = ((a['stok_barang'] ?? 0) as num)
+              .compareTo((b['stok_barang'] ?? 0) as num);
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
+    });
   }
 
   @override
@@ -156,14 +205,16 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Tanggal')),
-                      DataColumn(label: Text('Nama Barang')),
-                      DataColumn(label: Text('Keterangan')),
-                      DataColumn(label: Text('Qty Masuk')),
-                      DataColumn(label: Text('Qty Keluar')),
-                      DataColumn(label: Text('Sisa Stok')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(label: const Text('Tanggal'), onSort: _onSort),
+                      DataColumn(label: const Text('Nama Barang'), onSort: _onSort),
+                      DataColumn(label: const Text('Keterangan'), onSort: _onSort),
+                      DataColumn(label: const Text('Qty Masuk'), onSort: _onSort),
+                      DataColumn(label: const Text('Qty Keluar'), onSort: _onSort),
+                      DataColumn(label: const Text('Sisa Stok'), onSort: _onSort),
                     ],
                     rows: data.asMap().entries.map((entry) {
                       int index = entry.key;

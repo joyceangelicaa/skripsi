@@ -18,6 +18,8 @@ class _StokOpnameScreenState extends State<StokOpnameScreen> {
   List<dynamic> _filteredData = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 2;
+  bool _sortAscending = false;
 
   @override
   void initState() {
@@ -55,6 +57,42 @@ class _StokOpnameScreenState extends State<StokOpnameScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 4) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredData.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['id_stok_opname'] ?? '').toString().compareTo(
+              (b['id_stok_opname'] ?? '').toString());
+          break;
+        case 2:
+          result = (a['created_at'] ?? '').toString().compareTo(
+              (b['created_at'] ?? '').toString());
+          break;
+        case 3:
+          result = (a['user']?['nama_user'] ?? '').toString().compareTo(
+              (b['user']?['nama_user'] ?? '').toString());
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -142,12 +180,23 @@ class _StokOpnameScreenState extends State<StokOpnameScreen> {
                 : _filteredData.isEmpty
                     ? const Center(child: Text("Tidak ada data"))
                     : GlobalDataTable(
-                        columns: const [
-                          DataColumn(label: Text('No')),
-                          DataColumn(label: Text('ID Stok Opname')),
-                          DataColumn(label: Text('Tanggal Stok Opname')),
-                          DataColumn(label: Text('Nama User')),
-                          DataColumn(label: Text('Action')),
+                        sortColumnIndex: _sortColumnIndex,
+                        sortAscending: _sortAscending,
+                        columns: [
+                          const DataColumn(label: Text('No')),
+                          DataColumn(
+                            label: const Text('ID Stok Opname'),
+                            onSort: _onSort,
+                          ),
+                          DataColumn(
+                            label: const Text('Tanggal Stok Opname'),
+                            onSort: _onSort,
+                          ),
+                          DataColumn(
+                            label: const Text('Nama User'),
+                            onSort: _onSort,
+                          ),
+                          const DataColumn(label: Text('Action')),
                         ],
                         rows: List.generate(_filteredData.length, (index) {
                           final item = _filteredData[index];

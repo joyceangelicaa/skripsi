@@ -22,6 +22,8 @@ class _CustomerScreenState extends State<CustomerScreen> {
   List<dynamic> _filteredCustomers = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -62,8 +64,44 @@ class _CustomerScreenState extends State<CustomerScreen> {
           return item.values.any((value) {
             return value.toString().toLowerCase().contains(query.toLowerCase());
           });
-        }).toList();
+          }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 4) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredCustomers.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nama_customer'] ?? '').toString().compareTo(
+              (b['nama_customer'] ?? '').toString());
+          break;
+        case 2:
+          result = (a['no_telp'] ?? '').toString().compareTo(
+              (b['no_telp'] ?? '').toString());
+          break;
+        case 3:
+          result = (a['alamat'] ?? '').toString().compareTo(
+              (b['alamat'] ?? '').toString());
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -140,12 +178,23 @@ class _CustomerScreenState extends State<CustomerScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nama')),
-                      DataColumn(label: Text('No HP')),
-                      DataColumn(label: Text('Alamat')),
-                      DataColumn(label: Text('Action')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(
+                        label: const Text('Nama'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('No HP'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Alamat'),
+                        onSort: _onSort,
+                      ),
+                      const DataColumn(label: Text('Action')),
                     ],
                     rows: List.generate(_filteredCustomers.length, (index) {
                       final c = _filteredCustomers[index];

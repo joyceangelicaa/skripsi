@@ -25,6 +25,8 @@ class _LaporanPenjualanScreenState extends State<LaporanPenjualanScreen> {
   List<dynamic> _filteredItems = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -98,8 +100,52 @@ class _LaporanPenjualanScreenState extends State<LaporanPenjualanScreen> {
           return item.values.any((value) {
             return value.toString().toLowerCase().contains(query.toLowerCase());
           });
-        }).toList();
+          }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredItems.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nomer_penjualan'] ?? '').toString().compareTo(
+              (b['nomer_penjualan'] ?? '').toString());
+          break;
+        case 2:
+          result = (a['tanggal_penjualan'] ?? '').toString().compareTo(
+              (b['tanggal_penjualan'] ?? '').toString());
+          break;
+        case 3:
+          result = (a['nama_customer'] ?? '').toString().compareTo(
+              (b['nama_customer'] ?? '').toString());
+          break;
+        case 4:
+          result = ((a['jumlah_produk_dipesan'] ?? 0) as num)
+              .compareTo((b['jumlah_produk_dipesan'] ?? 0) as num);
+          break;
+        case 5:
+          result = ((a['total_harga'] ?? 0) as num)
+              .compareTo((b['total_harga'] ?? 0) as num);
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -435,13 +481,30 @@ class _LaporanPenjualanScreenState extends State<LaporanPenjualanScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('No Penjualan')),
-                      DataColumn(label: Text('Tanggal Penjualan')),
-                      DataColumn(label: Text('Nama Customer')),
-                      DataColumn(label: Text('Jumlah Produk')),
-                      DataColumn(label: Text('Total Penjualan')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(
+                        label: const Text('No Penjualan'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Tanggal Penjualan'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Nama Customer'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Jumlah Produk'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Total Penjualan'),
+                        onSort: _onSort,
+                      ),
                     ],
                     rows: List.generate(_filteredItems.length, (index) {
                       final item = _filteredItems[index];

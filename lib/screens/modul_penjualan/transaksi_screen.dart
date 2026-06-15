@@ -18,6 +18,8 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
   List<Map<String, dynamic>> _filteredPenjualan = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -99,8 +101,48 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
           return item.values.any((value) {
             return value.toString().toLowerCase().contains(query.toLowerCase());
           });
-        }).toList();
+          }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 5) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredPenjualan.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nomer_penjualan'] ?? '').toString().compareTo(
+              (b['nomer_penjualan'] ?? '').toString());
+          break;
+        case 2:
+          result = (a['tanggal_penjualan'] ?? '').toString().compareTo(
+              (b['tanggal_penjualan'] ?? '').toString());
+          break;
+        case 3:
+          result = (a['customer']?['nama_customer'] ?? '').toString().compareTo(
+              (b['customer']?['nama_customer'] ?? '').toString());
+          break;
+        case 4:
+          result = ((a['total_harga'] ?? 0) as num)
+              .compareTo((b['total_harga'] ?? 0) as num);
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -165,13 +207,27 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nomer Transaksi')),
-                      DataColumn(label: Text('Tgl Transaksi')),
-                      DataColumn(label: Text('Nama Customer')),
-                      DataColumn(label: Text('Total Harga')),
-                      DataColumn(label: Text('Action')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(
+                        label: const Text('Nomer Transaksi'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Tgl Transaksi'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Nama Customer'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Total Harga'),
+                        onSort: _onSort,
+                      ),
+                      const DataColumn(label: Text('Action')),
                     ],
                     rows: List.generate(_filteredPenjualan.length, (index) {
                       final item = _filteredPenjualan[index];

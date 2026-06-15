@@ -21,6 +21,8 @@ class _ProdukScreenState extends State<ProdukScreen> {
   List<dynamic> _filteredProduk = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -63,7 +65,57 @@ class _ProdukScreenState extends State<ProdukScreen> {
           });
         }).toList();
       }
+      _sortData();
     });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 6) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+
+    _filteredProduk.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nama_produk'] ?? '').toString().compareTo(
+              (b['nama_produk'] ?? '').toString());
+          break;
+        case 2:
+          result = ((a['stok_produk'] ?? 0) as num)
+              .compareTo((b['stok_produk'] ?? 0) as num);
+          break;
+        case 3:
+          result = ((a['harga_jual'] ?? 0) as num)
+              .compareTo((b['harga_jual'] ?? 0) as num);
+          break;
+        case 4:
+          result = ((a['reorder_point'] ?? 0) as num)
+              .compareTo((b['reorder_point'] ?? 0) as num);
+          break;
+        case 5:
+          result = _computeStatus(a).compareTo(_computeStatus(b));
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
+    });
+  }
+
+  String _computeStatus(dynamic item) {
+    if (item['stok_produk'] == 0) return 'Habis';
+    if (item['stok_produk'] <= item['reorder_point']) return 'Menipis';
+    return 'Tersedia';
   }
 
   @override
@@ -150,14 +202,31 @@ class _ProdukScreenState extends State<ProdukScreen> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : GlobalDataTable(
-                        columns: const [
-                          DataColumn(label: Text('No')),
-                          DataColumn(label: Text('Nama Barang')),
-                          DataColumn(label: Text('Jumlah Stock')),
-                          DataColumn(label: Text('Harga Jual')),
-                          DataColumn(label: Text('ROP')),
-                          DataColumn(label: Text('Status Barang')),
-                          DataColumn(label: Text('Action')),
+                        sortColumnIndex: _sortColumnIndex,
+                        sortAscending: _sortAscending,
+                        columns: [
+                          const DataColumn(label: Text('No')),
+                          DataColumn(
+                            label: const Text('Nama Barang'),
+                            onSort: _onSort,
+                          ),
+                          DataColumn(
+                            label: const Text('Jumlah Stock'),
+                            onSort: _onSort,
+                          ),
+                          DataColumn(
+                            label: const Text('Harga Jual'),
+                            onSort: _onSort,
+                          ),
+                          DataColumn(
+                            label: const Text('ROP'),
+                            onSort: _onSort,
+                          ),
+                          DataColumn(
+                            label: const Text('Status Barang'),
+                            onSort: _onSort,
+                          ),
+                          const DataColumn(label: Text('Action')),
                         ],
                         rows: _filteredProduk.asMap().entries.map((entry) {
                           int index = entry.key;
@@ -213,7 +282,7 @@ class _ProdukScreenState extends State<ProdukScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
+              color: statusColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

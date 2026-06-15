@@ -21,6 +21,8 @@ class _UserScreenState extends State<UserScreen> {
   List _filteredUsers = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -59,6 +61,42 @@ class _UserScreenState extends State<UserScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 4) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredUsers.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nama_user'] ?? '').toString().compareTo(
+              (b['nama_user'] ?? '').toString());
+          break;
+        case 2:
+          result = (a['email'] ?? '').toString().compareTo(
+              (b['email'] ?? '').toString());
+          break;
+        case 3:
+          result = (a['role'] ?? '').toString().compareTo(
+              (b['role'] ?? '').toString());
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -135,12 +173,23 @@ class _UserScreenState extends State<UserScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nama User')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Role')),
-                      DataColumn(label: Text('Action')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(
+                        label: const Text('Nama User'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Email'),
+                        onSort: _onSort,
+                      ),
+                      DataColumn(
+                        label: const Text('Role'),
+                        onSort: _onSort,
+                      ),
+                      const DataColumn(label: Text('Action')),
                     ],
                     rows: List.generate(_filteredUsers.length, (index) {
                       final u = _filteredUsers[index];

@@ -23,6 +23,8 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -128,6 +130,32 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 4) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredList.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1: result = (a['id_penerimaan']?.toString() ?? '').compareTo(b['id_penerimaan']?.toString() ?? ''); break;
+        case 2: result = (a['id_pembelian']?.toString() ?? '').compareTo(b['id_pembelian']?.toString() ?? ''); break;
+        case 3: result = (a['tanggal']?.toString() ?? '').compareTo(b['tanggal']?.toString() ?? ''); break;
+        default: return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -265,12 +293,14 @@ class _PenerimaanScreenState extends State<PenerimaanScreen> {
 
           Expanded(
             child: GlobalDataTable(
-              columns: const [
-                DataColumn(label: Text('No')),
-                DataColumn(label: Text('ID Penerimaan')),
-                DataColumn(label: Text('ID Pembelian')),
-                DataColumn(label: Text('Tanggal Terima')),
-                DataColumn(label: Text('Action')),
+              sortColumnIndex: _sortColumnIndex,
+              sortAscending: _sortAscending,
+              columns: [
+                const DataColumn(label: Text('No')),
+                DataColumn(label: const Text('ID Penerimaan'), onSort: _onSort),
+                DataColumn(label: const Text('ID Pembelian'), onSort: _onSort),
+                DataColumn(label: const Text('Tanggal Terima'), onSort: _onSort),
+                const DataColumn(label: Text('Action')),
               ],
               rows: _filteredList.map((po) {
                 return _buildDataRow(

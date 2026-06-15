@@ -19,6 +19,8 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
   List<dynamic> detailItems = [];
 
   bool isLoading = true;
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void didChangeDependencies() {
@@ -49,6 +51,49 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
         isLoading = false;
       });
     }
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    detailItems.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['kartu_stok']?['produk']?['nama_produk'] ?? '').toString().compareTo(
+              (b['kartu_stok']?['produk']?['nama_produk'] ?? '').toString());
+          break;
+        case 2:
+          result = ((a['detail']?['stok_sistem'] ?? 0) as num)
+              .compareTo((b['detail']?['stok_sistem'] ?? 0) as num);
+          break;
+        case 3:
+          result = ((a['detail']?['stok_fisik'] ?? 0) as num)
+              .compareTo((b['detail']?['stok_fisik'] ?? 0) as num);
+          break;
+        case 4:
+          result = ((a['detail']?['selisih'] ?? 0) as num)
+              .compareTo((b['detail']?['selisih'] ?? 0) as num);
+          break;
+        case 5:
+          result = (a['detail']?['keterangan_barang'] ?? '').toString().compareTo(
+              (b['detail']?['keterangan_barang'] ?? '').toString());
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
+    });
   }
 
   @override
@@ -124,13 +169,15 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
                 // =========================
                 Expanded(
                   child: GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nama Barang')),
-                      DataColumn(label: Text('Stok Sistem')),
-                      DataColumn(label: Text('Stok Fisik')),
-                      DataColumn(label: Text('Selisih')),
-                      DataColumn(label: Text('Keterangan')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(label: const Text('Nama Barang'), onSort: _onSort),
+                      DataColumn(label: const Text('Stok Sistem'), onSort: _onSort),
+                      DataColumn(label: const Text('Stok Fisik'), onSort: _onSort),
+                      DataColumn(label: const Text('Selisih'), onSort: _onSort),
+                      DataColumn(label: const Text('Keterangan'), onSort: _onSort),
                     ],
                     rows: List.generate(detailItems.length, (index) {
                       final item = detailItems[index];

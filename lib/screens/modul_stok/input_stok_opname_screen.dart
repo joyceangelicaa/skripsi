@@ -25,6 +25,8 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
 
   String? idStokOpname;
   String? createdAt;
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void didChangeDependencies() {
@@ -81,6 +83,38 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 3 || columnIndex == 4) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredItems.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nama_produk'] ?? '').toString().compareTo(
+              (b['nama_produk'] ?? '').toString());
+          break;
+        case 2:
+          result = ((a['stok_produk'] ?? 0) as num)
+              .compareTo((b['stok_produk'] ?? 0) as num);
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -271,12 +305,14 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
             child: items.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nama Barang')),
-                      DataColumn(label: Text('Stok Asli')),
-                      DataColumn(label: Text('Hasil Opname')),
-                      DataColumn(label: Text('Keterangan')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(label: const Text('Nama Barang'), onSort: _onSort),
+                      DataColumn(label: const Text('Stok Asli'), onSort: _onSort),
+                      const DataColumn(label: Text('Hasil Opname')),
+                      const DataColumn(label: Text('Keterangan')),
                     ],
                     rows: List.generate(_filteredItems.length, (index) {
                       final item = _filteredItems[index];

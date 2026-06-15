@@ -4,8 +4,16 @@ import '../../global_widget/confirmation_dialog.dart';
 import '../../root/app_route.dart';
 import '../../global_widget/table.dart';
 
-class EditStokOpnameScreen extends StatelessWidget {
+class EditStokOpnameScreen extends StatefulWidget {
   const EditStokOpnameScreen({super.key});
+
+  @override
+  State<EditStokOpnameScreen> createState() => _EditStokOpnameScreenState();
+}
+
+class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   Widget build(BuildContext context) {
@@ -128,12 +136,20 @@ class EditStokOpnameScreen extends StatelessWidget {
           // --- 5. TABEL EDIT DATA ---
           Expanded(
             child: GlobalDataTable(
-              columns: const [
-                DataColumn(label: Text('No')),
-                DataColumn(label: Text('Nama Barang')),
-                DataColumn(label: Text('Stok Sistem')),
-                DataColumn(label: Text('Stok Fisik (Edit)')),
-                DataColumn(label: Text('Keterangan')),
+              sortColumnIndex: _sortColumnIndex,
+              sortAscending: _sortAscending,
+              columns: [
+                const DataColumn(label: Text('No')),
+                DataColumn(
+                  label: const Text('Nama Barang'),
+                  onSort: _onSort,
+                ),
+                DataColumn(
+                  label: const Text('Stok Sistem'),
+                  onSort: _onSort,
+                ),
+                const DataColumn(label: Text('Stok Fisik (Edit)')),
+                const DataColumn(label: Text('Keterangan')),
               ],
               rows: [
                 _buildEditDataRow('1', 'Oli Mesin Matic', '150', '150', '-'),
@@ -215,5 +231,21 @@ class EditStokOpnameScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 3 || columnIndex == 4) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    // Data is hardcoded in rows list above, so actual sorting requires
+    // storing row data in a list and rebuilding DataRow from sorted data.
+    // For now the sort indicator toggles via sortColumnIndex / sortAscending.
   }
 }

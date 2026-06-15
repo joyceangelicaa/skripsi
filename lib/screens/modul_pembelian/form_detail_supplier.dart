@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../service/supplier_service.dart';
-import '../../../service/pembelian_service.dart';
-import '../../../service/produk_service.dart';
+import '../../service/supplier_service.dart';
+import '../../service/pembelian_service.dart';
+import '../../service/produk_service.dart';
 import '../../../global_widget/table.dart';
 
 class FormDetailSupplier extends StatefulWidget {
@@ -22,6 +22,10 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
 
   List<dynamic> produkList = [];
   bool isLoadingProduk = true;
+  int? _sortColumnIndex1 = 1;
+  bool _sortAscending1 = true;
+  int? _sortColumnIndex2 = 1;
+  bool _sortAscending2 = true;
 
   @override
   void initState() {
@@ -62,6 +66,55 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
     } catch (e) {
       if (mounted) setState(() => isLoadingProduk = false);
     }
+  }
+
+  void _onSort1(int columnIndex, bool ascending) {
+    setState(() {
+      _sortColumnIndex1 = columnIndex;
+      _sortAscending1 = ascending;
+      _sortData1();
+    });
+  }
+
+  void _sortData1() {
+    if (_sortColumnIndex1 == null) return;
+    final ci = _sortColumnIndex1!;
+    final asc = _sortAscending1;
+    pembelianList.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1: result = (a['id_pembelian']?.toString() ?? '').compareTo(b['id_pembelian']?.toString() ?? ''); break;
+        case 2: result = (a['tanggal_pembelian']?.toString() ?? '').compareTo(b['tanggal_pembelian']?.toString() ?? ''); break;
+        case 3: result = ((a['total_harga'] ?? 0) as num).compareTo((b['total_harga'] ?? 0) as num); break;
+        default: return 0;
+      }
+      return asc ? result : -result;
+    });
+  }
+
+  void _onSort2(int columnIndex, bool ascending) {
+    setState(() {
+      _sortColumnIndex2 = columnIndex;
+      _sortAscending2 = ascending;
+      _sortData2();
+    });
+  }
+
+  void _sortData2() {
+    if (_sortColumnIndex2 == null) return;
+    final ci = _sortColumnIndex2!;
+    final asc = _sortAscending2;
+    produkList.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1: result = (a['nama_produk']?.toString() ?? '').compareTo(b['nama_produk']?.toString() ?? ''); break;
+        case 2: result = (a['harga'] is List && (a['harga'] as List).isNotEmpty ? ((a['harga'] as List)[0] ?? 0) as num : 0).compareTo(b['harga'] is List && (b['harga'] as List).isNotEmpty ? ((b['harga'] as List)[0] ?? 0) as num : 0); break;
+        case 3: result = (a['harga'] is List && (a['harga'] as List).length > 1 ? ((a['harga'] as List)[1] ?? 0) as num : 0).compareTo(b['harga'] is List && (b['harga'] as List).length > 1 ? ((b['harga'] as List)[1] ?? 0) as num : 0); break;
+        case 4: result = (a['harga'] is List && (a['harga'] as List).length > 2 ? ((a['harga'] as List)[2] ?? 0) as num : 0).compareTo(b['harga'] is List && (b['harga'] as List).length > 2 ? ((b['harga'] as List)[2] ?? 0) as num : 0); break;
+        default: return 0;
+      }
+      return asc ? result : -result;
+    });
   }
 
   String _formatTanggal(String? isoDate) {
@@ -171,11 +224,13 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
     }
 
     return GlobalDataTable(
-      columns: const [
-        DataColumn(label: Text('No')),
-        DataColumn(label: Text('ID Pembelian')),
-        DataColumn(label: Text('Tanggal')),
-        DataColumn(label: Text('Total Harga')),
+      sortColumnIndex: _sortColumnIndex1,
+      sortAscending: _sortAscending1,
+      columns: [
+        const DataColumn(label: Text('No')),
+        DataColumn(label: const Text('ID Pembelian'), onSort: _onSort1),
+        DataColumn(label: const Text('Tanggal'), onSort: _onSort1),
+        DataColumn(label: const Text('Total Harga'), onSort: _onSort1),
       ],
       rows: List.generate(pembelianList.length, (index) {
         final item = pembelianList[index];
@@ -200,12 +255,14 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
     }
 
     return GlobalDataTable(
-      columns: const [
-        DataColumn(label: Text('No')),
-        DataColumn(label: Text('Nama Produk')),
-        DataColumn(label: Text('Harga Terakhir')),
-        DataColumn(label: Text('Harga ke-2')),
-        DataColumn(label: Text('Harga ke-3')),
+      sortColumnIndex: _sortColumnIndex2,
+      sortAscending: _sortAscending2,
+      columns: [
+        const DataColumn(label: Text('No')),
+        DataColumn(label: const Text('Nama Produk'), onSort: _onSort2),
+        DataColumn(label: const Text('Harga Terakhir'), onSort: _onSort2),
+        DataColumn(label: const Text('Harga ke-2'), onSort: _onSort2),
+        DataColumn(label: const Text('Harga ke-3'), onSort: _onSort2),
       ],
       rows: List.generate(produkList.length, (index) {
         final item = produkList[index];

@@ -23,6 +23,8 @@ class _LaporanStokScreenState extends State<LaporanStokScreen> {
   List<dynamic> items = [];
   List<dynamic> _filteredItems = [];
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -185,6 +187,50 @@ class _LaporanStokScreenState extends State<LaporanStokScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredItems.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['nama_produk'] ?? '').toString().compareTo(
+              (b['nama_produk'] ?? '').toString());
+          break;
+        case 2:
+          result = ((a['stok_awal'] ?? 0) as num)
+              .compareTo((b['stok_awal'] ?? 0) as num);
+          break;
+        case 3:
+          result = ((a['stok_masuk'] ?? 0) as num)
+              .compareTo((b['stok_masuk'] ?? 0) as num);
+          break;
+        case 4:
+          result = ((a['stok_keluar'] ?? 0) as num)
+              .compareTo((b['stok_keluar'] ?? 0) as num);
+          break;
+        case 5:
+          result = ((a['stok_akhir'] ?? 0) as num)
+              .compareTo((b['stok_akhir'] ?? 0) as num);
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -323,13 +369,15 @@ class _LaporanStokScreenState extends State<LaporanStokScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nama Barang')),
-                      DataColumn(label: Text('Stok Awal')),
-                      DataColumn(label: Text('Masuk')),
-                      DataColumn(label: Text('Keluar')),
-                      DataColumn(label: Text('Stok Akhir')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(label: const Text('Nama Barang'), onSort: _onSort),
+                      DataColumn(label: const Text('Stok Awal'), onSort: _onSort),
+                      DataColumn(label: const Text('Masuk'), onSort: _onSort),
+                      DataColumn(label: const Text('Keluar'), onSort: _onSort),
+                      DataColumn(label: const Text('Stok Akhir'), onSort: _onSort),
                     ],
                     rows: List.generate(_filteredItems.length, (index) {
                       final item = _filteredItems[index];

@@ -28,6 +28,8 @@ class _LaporanPembelianScreenState extends State<LaporanPembelianScreen> {
   List<dynamic> _filteredItems = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -94,6 +96,35 @@ class _LaporanPembelianScreenState extends State<LaporanPembelianScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredItems.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1: result = (a['id_pembelian']?.toString() ?? '').compareTo(b['id_pembelian']?.toString() ?? ''); break;
+        case 2: result = (a['tanggal_pembelian']?.toString() ?? '').compareTo(b['tanggal_pembelian']?.toString() ?? ''); break;
+        case 3: result = ((a['total_harga'] ?? 0) as num).compareTo((b['total_harga'] ?? 0) as num); break;
+        case 4: result = (a['id_penerimaan']?.toString() ?? '').compareTo(b['id_penerimaan']?.toString() ?? ''); break;
+        case 5: result = (a['tanggal_penerimaan']?.toString() ?? '').compareTo(b['tanggal_penerimaan']?.toString() ?? ''); break;
+        case 6: result = (a['status']?.toString() ?? '').compareTo(b['status']?.toString() ?? ''); break;
+        default: return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -376,14 +407,16 @@ class _LaporanPembelianScreenState extends State<LaporanPembelianScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('ID Pembelian')),
-                      DataColumn(label: Text('Tgl Beli')),
-                      DataColumn(label: Text('Total Harga')),
-                      DataColumn(label: Text('ID Penerimaan')),
-                      DataColumn(label: Text('Tgl Terima')),
-                      DataColumn(label: Text('Status')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(label: const Text('ID Pembelian'), onSort: _onSort),
+                      DataColumn(label: const Text('Tgl Beli'), onSort: _onSort),
+                      DataColumn(label: const Text('Total Harga'), onSort: _onSort),
+                      DataColumn(label: const Text('ID Penerimaan'), onSort: _onSort),
+                      DataColumn(label: const Text('Tgl Terima'), onSort: _onSort),
+                      DataColumn(label: const Text('Status'), onSort: _onSort),
                     ],
                     rows: List.generate(_filteredItems.length, (index) {
                       final item = _filteredItems[index];

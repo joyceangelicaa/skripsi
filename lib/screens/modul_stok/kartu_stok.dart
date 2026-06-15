@@ -14,6 +14,8 @@ class KartuStokScreen extends StatefulWidget {
 class _KartuStokScreenState extends State<KartuStokScreen> {
   List<dynamic> kartuStokList = [];
   bool isLoading = true;
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -45,6 +47,33 @@ class _KartuStokScreenState extends State<KartuStokScreen> {
         isLoading = false;
       });
     }
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 2) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    kartuStokList.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1:
+          result = (a['produk']?['nama_produk'] ?? a['kode_produk'] ?? '').toString().compareTo(
+              (b['produk']?['nama_produk'] ?? b['kode_produk'] ?? '').toString());
+          break;
+        default:
+          return 0;
+      }
+      return asc ? result : -result;
+    });
   }
 
   @override
@@ -95,10 +124,15 @@ class _KartuStokScreenState extends State<KartuStokScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('Nama Barang')),
-                      DataColumn(label: Text('Action')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(
+                        label: const Text('Nama Barang'),
+                        onSort: _onSort,
+                      ),
+                      const DataColumn(label: Text('Action')),
                     ],
                     rows: kartuStokList.asMap().entries.map((entry) {
                       int index = entry.key;

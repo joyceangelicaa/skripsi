@@ -27,6 +27,8 @@ class _PembelianScreenState extends State<PembelianScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
+  int? _sortColumnIndex = 1;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -156,6 +158,33 @@ class _PembelianScreenState extends State<PembelianScreen> {
           });
         }).toList();
       }
+      _sortData();
+    });
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex == 0 || columnIndex == 5) return;
+    setState(() {
+      _sortColumnIndex = columnIndex;
+      _sortAscending = ascending;
+      _sortData();
+    });
+  }
+
+  void _sortData() {
+    if (_sortColumnIndex == null) return;
+    final ci = _sortColumnIndex!;
+    final asc = _sortAscending;
+    _filteredList.sort((a, b) {
+      int result;
+      switch (ci) {
+        case 1: result = (a['id']?.toString() ?? '').compareTo(b['id']?.toString() ?? ''); break;
+        case 2: result = (a['supplier']?.toString() ?? '').compareTo(b['supplier']?.toString() ?? ''); break;
+        case 3: result = (a['tanggal']?.toString() ?? '').compareTo(b['tanggal']?.toString() ?? ''); break;
+        case 4: result = (a['status']?.toString() ?? '').compareTo(b['status']?.toString() ?? ''); break;
+        default: return 0;
+      }
+      return asc ? result : -result;
     });
   }
 
@@ -347,13 +376,15 @@ class _PembelianScreenState extends State<PembelianScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GlobalDataTable(
-                    columns: const [
-                      DataColumn(label: Text('No')),
-                      DataColumn(label: Text('ID Pembelian')),
-                      DataColumn(label: Text('Nama Supplier')),
-                      DataColumn(label: Text('Tanggal Pembelian')),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Action')),
+                    sortColumnIndex: _sortColumnIndex,
+                    sortAscending: _sortAscending,
+                    columns: [
+                      const DataColumn(label: Text('No')),
+                      DataColumn(label: const Text('ID Pembelian'), onSort: _onSort),
+                      DataColumn(label: const Text('Nama Supplier'), onSort: _onSort),
+                      DataColumn(label: const Text('Tanggal Pembelian'), onSort: _onSort),
+                      DataColumn(label: const Text('Status'), onSort: _onSort),
+                      const DataColumn(label: Text('Action')),
                     ],
                     rows: _filteredList.map((po) {
                       return _buildDataRow(

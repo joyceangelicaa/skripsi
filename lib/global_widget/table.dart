@@ -1,16 +1,21 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'dart:math'; // Diperlukan untuk fungsi min
 
 class GlobalDataTable extends StatefulWidget {
   final List<DataColumn> columns;
   final List<DataRow> rows;
-  final int rowsPerPage; // Jumlah baris per halaman
+  final int? sortColumnIndex;
+  final bool sortAscending;
+  final List<int> rowsPerPageOptions;
 
   const GlobalDataTable({
     super.key,
     required this.columns,
     required this.rows,
-    this.rowsPerPage = 10, // Default 10 baris per halaman, bisa kamu ganti
+    this.sortColumnIndex,
+    this.sortAscending = true,
+    this.rowsPerPageOptions = const [10, 25, 50, 100],
   });
 
   @override
@@ -19,6 +24,16 @@ class GlobalDataTable extends StatefulWidget {
 
 class _GlobalDataTableState extends State<GlobalDataTable> {
   int _currentPage = 0;
+  int _rowsPerPage = 10;
+  bool _showAll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rowsPerPage = widget.rowsPerPageOptions.isNotEmpty
+        ? widget.rowsPerPageOptions.first
+        : 10;
+  }
 
   @override
   void didUpdateWidget(GlobalDataTable oldWidget) {
@@ -28,17 +43,22 @@ class _GlobalDataTableState extends State<GlobalDataTable> {
     }
   }
 
+  int get _effectiveRowsPerPage =>
+      _showAll ? widget.rows.length : _rowsPerPage;
+
   @override
   Widget build(BuildContext context) {
-    // Logika Slicing Data (Memotong list rows berdasarkan halaman)
-    final int totalPages = (widget.rows.length / widget.rowsPerPage).ceil();
-    final int startIndex = _currentPage * widget.rowsPerPage;
-    final int endIndex = min(startIndex + widget.rowsPerPage, widget.rows.length);
-    final List<DataRow> paginatedRows = widget.rows.sublist(startIndex, endIndex);
+    final int totalPages = _showAll || widget.rows.isEmpty
+        ? 1
+        : (widget.rows.length / _rowsPerPage).ceil();
+    final int startIndex = _currentPage * _effectiveRowsPerPage;
+    final int endIndex =
+        min(startIndex + _effectiveRowsPerPage, widget.rows.length);
+    final List<DataRow> paginatedRows =
+        widget.rows.sublist(startIndex, endIndex);
 
     return Column(
       children: [
-        // Tabel Data
         Expanded(
           child: Container(
             width: double.infinity,
@@ -47,7 +67,7 @@ class _GlobalDataTableState extends State<GlobalDataTable> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -60,7 +80,8 @@ class _GlobalDataTableState extends State<GlobalDataTable> {
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                      constraints:
+                          BoxConstraints(minWidth: constraints.maxWidth),
                       child: DataTable(
                         headingRowHeight: 60,
                         dataRowMaxHeight: 65,
@@ -69,8 +90,10 @@ class _GlobalDataTableState extends State<GlobalDataTable> {
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
+                        sortColumnIndex: widget.sortColumnIndex,
+                        sortAscending: widget.sortAscending,
                         columns: widget.columns,
-                        rows: paginatedRows, // Menggunakan list yang sudah di-slice
+                        rows: paginatedRows,
                       ),
                     ),
                   ),
@@ -79,26 +102,113 @@ class _GlobalDataTableState extends State<GlobalDataTable> {
             ),
           ),
         ),
+        if (widget.rows.isNotEmpty) _buildBottomControls(totalPages),
+      ],
+    );
+  }
 
-        // Kontrol Navigasi Halaman
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text('Halaman ${_currentPage + 1} dari $totalPages'),
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: _currentPage > 0
-                  ? () => setState(() => _currentPage--)
-                  : null,
+  Widget _buildBottomControls(int totalPages) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildShowEntriesDropdown(),
+          if (!_showAll && totalPages > 1) _buildPagination(totalPages),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShowEntriesDropdown() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Show ',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: Colors.grey.shade600,
+            fontSize: 13,
+          ),
+        ),
+        Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _showAll ? -1 : _rowsPerPage,
+              isDense: true,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: Colors.grey.shade800,
+                fontSize: 13,
+              ),
+              items: [
+                ...widget.rowsPerPageOptions.map(
+                  (option) => DropdownMenuItem(
+                    value: option,
+                    child: Text(option.toString()),
+                  ),
+                ),
+                const DropdownMenuItem(
+                  value: -1,
+                  child: Text('All'),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  if (value == -1) {
+                    _showAll = true;
+                  } else {
+                    _showAll = false;
+                    _rowsPerPage = value!;
+                    _currentPage = 0;
+                  }
+                });
+              },
             ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: _currentPage < totalPages - 1
-                  ? () => setState(() => _currentPage++)
-                  : null,
-            ),
-          ],
+          ),
+        ),
+        Text(
+          ' entries',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: Colors.grey.shade600,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPagination(int totalPages) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Halaman ${_currentPage + 1} dari $totalPages',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            color: Colors.grey.shade600,
+            fontSize: 13,
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: _currentPage > 0
+              ? () => setState(() => _currentPage--)
+              : null,
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: _currentPage < totalPages - 1
+              ? () => setState(() => _currentPage++)
+              : null,
         ),
       ],
     );
