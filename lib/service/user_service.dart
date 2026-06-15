@@ -78,7 +78,8 @@ class UserService {
         .timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
     } else {
       throw Exception('Gagal load user (${response.statusCode})');
     }

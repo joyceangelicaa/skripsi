@@ -26,7 +26,8 @@ class ProdukService {
     print("📡 Response: ${response.body}");
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body) as List<dynamic>;
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
     } else {
       throw Exception('Gagal ambil data produk (${response.statusCode})');
     }

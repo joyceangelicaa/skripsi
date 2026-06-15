@@ -37,7 +37,8 @@ class PenerimaanService {
     ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body) as List<dynamic>;
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
     } else {
       throw Exception("Gagal ambil data penerimaan (${response.statusCode})");
     }

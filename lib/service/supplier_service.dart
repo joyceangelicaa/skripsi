@@ -26,7 +26,8 @@ class SupplierService {
     print("📡 Response: ${response.body}");
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
     } else {
       throw Exception('Gagal ambil supplier (${response.statusCode})');
     }

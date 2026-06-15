@@ -341,7 +341,7 @@ class _SidebarState extends State<Sidebar> {
                 // --- MODUL STOK ---
                 _buildModuleMenu(
                   icon: Icons.inventory_2_outlined,
-                  title: 'Modul Stok',
+                  title: 'Stok',
                   subMenus: [
                     if (role == 'admin')
                     _buildSubMenu(title: 'Produk', onTap: () {
@@ -361,7 +361,7 @@ class _SidebarState extends State<Sidebar> {
                 if (role == 'admin')
                 _buildModuleMenu(
                   icon: Icons.shopping_cart_outlined,
-                  title: 'Modul Pembelian',
+                  title: 'Pembelian',
                   subMenus: [
                     _buildSubMenu(title: 'Pembelian Barang', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.pembelian);
@@ -379,7 +379,7 @@ class _SidebarState extends State<Sidebar> {
                 if (role == 'admin')
                 _buildModuleMenu(
                   icon: Icons.point_of_sale_outlined,
-                  title: 'Modul Penjualan',
+                  title: 'Penjualan',
                   subMenus: [
                     _buildSubMenu(title: 'Transaksi', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.transaksi);

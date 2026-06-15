@@ -49,7 +49,8 @@ class PembelianService {
     );
 
     if (res.statusCode == 200) {
-      final List data = jsonDecode(res.body);
+      final Map<String, dynamic> resBody = jsonDecode(res.body);
+      final List data = resBody['data'] as List;
 
       return List<Map<String, dynamic>>.from(
         data.asMap().entries.map((entry) {
