@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../global_widget/app_bar.dart';
+import '../../service/dashboard_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -10,12 +11,17 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  DateTime _startDate = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
 
-  final double dummyLabaKotor = 187500000;
-  final double dummyPengeluaran = 124300000;
-  final double dummyLabaBersih = 63200000;
+  double _pendapatan = 0;
+  double _pengeluaran = 0;
+  double get _labaBersih => _pendapatan - _pengeluaran;
+  List<Map<String, dynamic>> _produkTerlaris = [];
+  int _pembelianBaru = 0;
+  int _pembelianProses = 0;
+  int _pembelianSelesai = 0;
+  bool _isLoading = true;
 
   final List<Map<String, dynamic>> dummyBarangMenipis = [
     {'nama': 'Beras 5kg', 'qty': 5, 'rop': 10},
@@ -32,25 +38,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     {'nama': 'Kecap Manis', 'qty': 0, 'rop': 8},
   ];
 
-  final List<Map<String, dynamic>> dummyProdukTerlaris = [
-    {'nama': 'Beras 5kg', 'total': 120},
-    {'nama': 'Gula Pasir 1kg', 'total': 85},
-    {'nama': 'Minyak Goreng 2L', 'total': 70},
-    {'nama': 'Telur 1kg', 'total': 55},
-    {'nama': 'Mie Instan Goreng', 'total': 40},
-  ];
-
-  final List<Map<String, dynamic>> dummyStatusPembelian = [
-    {'status': 'Baru', 'count': 5},
-    {'status': 'Proses', 'count': 3},
-    {'status': 'Selesai', 'count': 12},
-  ];
-
-  final List<double> dummyPenjualanHarian = [
-    5, 7, 3, 8, 12, 9, 6, 4, 10, 11,
-    8, 6, 14, 10, 7, 5, 9, 13, 11, 8,
-    6, 12, 15, 9, 7, 11, 13, 10, 8, 14,
-  ];
+  List<double> _penjualanHarian = [];
+  List<String> _tanggalPenjualan = [];
 
   String _formatCurrency(double amount) {
     String raw = amount.toInt().toString();
@@ -85,6 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     if (picked != null) {
       setState(() => _startDate = picked);
+      _fetchData();
     }
   }
 
@@ -97,12 +87,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     if (picked != null) {
       setState(() => _endDate = picked);
+      _fetchData();
+    }
+  }
+
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    try {
+      final results = await Future.wait([
+        DashboardService.getPendapatan(startDate: _startDate, endDate: _endDate),
+        DashboardService.getPengeluaran(startDate: _startDate, endDate: _endDate),
+        DashboardService.getStatusPembelian(startDate: _startDate, endDate: _endDate),
+        DashboardService.getProdukTerlaris(startDate: _startDate, endDate: _endDate),
+        DashboardService.getPenjualanHarian(startDate: _startDate, endDate: _endDate),
+      ]);
+      setState(() {
+        _pendapatan = results[0] as double;
+        _pengeluaran = results[1] as double;
+        final status = results[2] as Map<String, int>;
+        _pembelianBaru = status['baru']!;
+        _pembelianProses = status['proses']!;
+        _pembelianSelesai = status['selesai']!;
+        _produkTerlaris = (results[3] as List<Map<String, dynamic>>)
+            .map((e) => {
+              'nama': e['nama_produk'] as String,
+              'total': e['jumlah_terjual'] as int,
+            })
+            .toList();
+        final harian = results[4] as List<Map<String, dynamic>>;
+        _penjualanHarian = harian
+            .map<double>((e) => (e['total_penjualan'] as num).toDouble())
+            .toList();
+        _tanggalPenjualan = harian
+            .map<String>((e) => e['tanggal'] as String)
+            .toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _fetchData();
   }
 
   @override
@@ -118,20 +147,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildDateFilter(),
           const SizedBox(height: 24),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildStatCards(),
-                  const SizedBox(height: 24),
-                  _buildRopLists(),
-                  const SizedBox(height: 24),
-                  _buildLineChartCard(),
-                  const SizedBox(height: 24),
-                  _buildChartRow(),
-                ],
-              ),
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStatCards(),
+                        const SizedBox(height: 24),
+                        _buildRopLists(),
+                        const SizedBox(height: 24),
+                        _buildLineChartCard(),
+                        const SizedBox(height: 24),
+                        _buildChartRow(),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -148,13 +179,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            'sampai',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: Color(0xFF64748B),
-            ),
+          child: Icon(
+            Icons.arrow_forward,
+            size: 18,
+            color: Color(0xFF94A3B8),
           ),
         ),
         _buildDatePicker(
@@ -220,8 +248,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Row(
       children: [
         _buildStatCard(
-          title: 'Laba Kotor',
-          amount: dummyLabaKotor,
+          title: 'Pendapatan',
+          amount: _pendapatan,
           icon: Icons.trending_up,
           color: const Color(0xFFD4A017),
           lightColor: const Color(0xFFFFF8E1),
@@ -229,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 20),
         _buildStatCard(
           title: 'Pengeluaran',
-          amount: dummyPengeluaran,
+          amount: _pengeluaran,
           icon: Icons.shopping_cart_outlined,
           color: const Color(0xFFEF4444),
           lightColor: const Color(0xFFFFE4E6),
@@ -237,7 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 20),
         _buildStatCard(
           title: 'Laba Bersih',
-          amount: dummyLabaBersih,
+          amount: _labaBersih,
           icon: Icons.account_balance_wallet_outlined,
           color: const Color(0xFF22C55E),
           lightColor: const Color(0xFFDCFCE7),
@@ -483,6 +511,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildLineChartCard() {
+    final maxVal = _penjualanHarian.isEmpty
+        ? 18000000.0
+        : _penjualanHarian.reduce((a, b) => a > b ? a : b);
+    final chartMaxY = maxVal == 0 ? 18000000.0 : maxVal * 1.2;
+    final interval = chartMaxY > 5000000 ? 2500000.0 : 1000000.0;
+    final bottomInterval = _penjualanHarian.length > 20 ? 5 : 1;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -504,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Icon(Icons.show_chart, size: 20, color: const Color(0xFF1E293B)),
               const SizedBox(width: 8),
               const Text(
-                'Penjualan 30 Hari',
+                'Penjualan',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 15,
@@ -517,85 +552,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
           SizedBox(
             height: 240,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  horizontalInterval: 5,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: const Color(0xFFF1F5F9),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      getTitlesWidget: (value, meta) {
-                        if (value % 5 != 0) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              color: Color(0xFF94A3B8),
-                            ),
+            child: _penjualanHarian.isEmpty
+                ? const Center(child: Text('Tidak ada data penjualan'))
+                : LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        horizontalInterval: interval,
+                        drawVerticalLine: false,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                          color: const Color(0xFFF1F5F9),
+                          strokeWidth: 1,
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 100,
+                            getTitlesWidget: (value, meta) {
+                              if (value == 0) return const SizedBox.shrink();
+                              if (value % interval != 0) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: Text(
+                                  _formatCurrency(value),
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 10,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 5,
-                      getTitlesWidget: (value, meta) {
-                        if (value % 5 != 0) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            'Hari ke-${value.toInt() + 1}',
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              color: Color(0xFF94A3B8),
-                            ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: bottomInterval.toDouble(),
+                            getTitlesWidget: (value, meta) {
+                              final idx = value.toInt();
+                              if (idx < 0 || idx >= _tanggalPenjualan.length) return const SizedBox.shrink();
+                              final parts = _tanggalPenjualan[idx].split('-');
+                              final label = '${parts[2]}/${parts[1]}';
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  label,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 10,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      minY: 0,
+                      maxY: chartMaxY,
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: List.generate(
+                            _penjualanHarian.length,
+                            (i) => FlSpot(i.toDouble(), _penjualanHarian[i]),
+                          ),
+                          isCurved: true,
+                          curveSmoothness: 0.3,
+                          color: const Color(0xFFD4A017),
+                          barWidth: 3,
+                          dotData: FlDotData(
+                            show: _penjualanHarian.length <= 15,
+                          ),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: const Color(0xFFD4A017).withValues(alpha: 0.08),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                borderData: FlBorderData(show: false),
-                minY: 0,
-                maxY: 20,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: List.generate(
-                      dummyPenjualanHarian.length,
-                      (i) => FlSpot(i.toDouble(), dummyPenjualanHarian[i]),
-                    ),
-                    isCurved: true,
-                    curveSmoothness: 0.3,
-                    color: const Color(0xFFD4A017),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: dummyPenjualanHarian.length <= 15,
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFFD4A017).withValues(alpha: 0.08),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -606,14 +647,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildPieChartCard()),
+        Expanded(child: _buildProdukTerlarisBarChart()),
         const SizedBox(width: 20),
         Expanded(child: _buildDonutChartCard()),
       ],
     );
   }
 
-  Widget _buildPieChartCard() {
+  Widget _buildProdukTerlarisBarChart() {
     final colors = [
       const Color(0xFFD4A017),
       const Color(0xFF3B82F6),
@@ -622,7 +663,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const Color(0xFF8B5CF6),
     ];
 
-    double total = dummyProdukTerlaris.fold<double>(0, (sum, item) => sum + (item['total'] as int));
+    final maxTotal = _produkTerlaris.isEmpty
+        ? 1
+        : _produkTerlaris
+            .map<int>((e) => e['total'] as int)
+            .reduce((a, b) => a > b ? a : b);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -642,7 +687,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.pie_chart, size: 20, color: const Color(0xFF1E293B)),
+              Icon(Icons.bar_chart, size: 20, color: const Color(0xFF1E293B)),
               const SizedBox(width: 8),
               const Text(
                 'Produk Terlaris',
@@ -656,68 +701,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: Row(
-              children: [
-                Expanded(
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 0,
-                      sections: List.generate(dummyProdukTerlaris.length, (i) {
-                        final pct = (dummyProdukTerlaris[i]['total'] as int) / total;
-                        return PieChartSectionData(
-                          color: colors[i % colors.length],
-                          value: pct * 100,
-                          title: '${(pct * 100).toStringAsFixed(0)}%',
-                          radius: 45,
-                          titleStyle: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        );
-                      }),
+          ...List.generate(_produkTerlaris.length, (i) {
+            final item = _produkTerlaris[i];
+            final pct = (item['total'] as int) / maxTotal;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 130,
+                    child: Text(
+                      item['nama'] as String,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: Color(0xFF475569),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(dummyProdukTerlaris.length, (i) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: colors[i % colors.length],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            dummyProdukTerlaris[i]['nama'] as String,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              color: Color(0xFF475569),
-                            ),
-                          ),
-                        ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: pct,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        color: colors[i % colors.length],
+                        minHeight: 20,
                       ),
-                    );
-                  }),
-                ),
-              ],
-            ),
-          ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      '${item['total']}',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E293B),
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -730,7 +762,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const Color(0xFF22C55E),
     ];
 
-    double total = dummyStatusPembelian.fold<double>(0, (sum, item) => sum + (item['count'] as int));
+    final statusData = [
+      {'status': 'Baru', 'count': _pembelianBaru},
+      {'status': 'Proses', 'count': _pembelianProses},
+      {'status': 'Selesai', 'count': _pembelianSelesai},
+    ];
+
+    double total = statusData.fold<double>(0, (sum, item) => sum + (item['count'] as int));
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -773,12 +811,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     PieChartData(
                       sectionsSpace: 0,
                       centerSpaceRadius: 45,
-                      sections: List.generate(dummyStatusPembelian.length, (i) {
-                        final pct = (dummyStatusPembelian[i]['count'] as int) / total;
+                      sections: List.generate(statusData.length, (i) {
+                        final pct = total > 0 ? (statusData[i]['count'] as int) / total : 0;
                         return PieChartSectionData(
                           color: colors[i % colors.length],
                           value: pct * 100,
-                          title: '${(pct * 100).toStringAsFixed(0)}%',
+                          title: total > 0 ? '${(pct * 100).toStringAsFixed(0)}%' : '0%',
                           radius: 45,
                           titleStyle: const TextStyle(
                             fontFamily: 'Inter',
@@ -795,7 +833,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(dummyStatusPembelian.length, (i) {
+                  children: List.generate(statusData.length, (i) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
@@ -811,7 +849,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            dummyStatusPembelian[i]['status'] as String,
+                            statusData[i]['status'] as String,
                             style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 12,
@@ -820,7 +858,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '(${dummyStatusPembelian[i]['count']})',
+                            '(${statusData[i]['count']})',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 12,

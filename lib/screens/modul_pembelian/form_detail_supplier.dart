@@ -108,9 +108,9 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
       int result;
       switch (ci) {
         case 1: result = (a['nama_produk']?.toString() ?? '').compareTo(b['nama_produk']?.toString() ?? ''); break;
-        case 2: result = (a['harga'] is List && (a['harga'] as List).isNotEmpty ? ((a['harga'] as List)[0] ?? 0) as num : 0).compareTo(b['harga'] is List && (b['harga'] as List).isNotEmpty ? ((b['harga'] as List)[0] ?? 0) as num : 0); break;
-        case 3: result = (a['harga'] is List && (a['harga'] as List).length > 1 ? ((a['harga'] as List)[1] ?? 0) as num : 0).compareTo(b['harga'] is List && (b['harga'] as List).length > 1 ? ((b['harga'] as List)[1] ?? 0) as num : 0); break;
-        case 4: result = (a['harga'] is List && (a['harga'] as List).length > 2 ? ((a['harga'] as List)[2] ?? 0) as num : 0).compareTo(b['harga'] is List && (b['harga'] as List).length > 2 ? ((b['harga'] as List)[2] ?? 0) as num : 0); break;
+        case 2: result = (a['harga_terakhir'] is List && (a['harga_terakhir'] as List).isNotEmpty ? ((a['harga_terakhir'] as List)[0] ?? 0) as num : 0).compareTo(b['harga_terakhir'] is List && (b['harga_terakhir'] as List).isNotEmpty ? ((b['harga_terakhir'] as List)[0] ?? 0) as num : 0); break;
+        case 3: result = (a['harga_terakhir'] is List && (a['harga_terakhir'] as List).length > 1 ? ((a['harga_terakhir'] as List)[1] ?? 0) as num : 0).compareTo(b['harga_terakhir'] is List && (b['harga_terakhir'] as List).length > 1 ? ((b['harga_terakhir'] as List)[1] ?? 0) as num : 0); break;
+        case 4: result = (a['harga_terakhir'] is List && (a['harga_terakhir'] as List).length > 2 ? ((a['harga_terakhir'] as List)[2] ?? 0) as num : 0).compareTo(b['harga_terakhir'] is List && (b['harga_terakhir'] as List).length > 2 ? ((b['harga_terakhir'] as List)[2] ?? 0) as num : 0); break;
         default: return 0;
       }
       return asc ? result : -result;
@@ -259,17 +259,18 @@ class _FormDetailSupplierState extends State<FormDetailSupplier> {
       sortAscending: _sortAscending2,
       columns: [
         const DataColumn(label: Text('No')),
-        DataColumn(label: const Text('Nama Produk'), onSort: _onSort2),
+        DataColumn(label: const Text('Produk'), onSort: _onSort2),
         DataColumn(label: const Text('Harga Terakhir'), onSort: _onSort2),
         DataColumn(label: const Text('Harga ke-2'), onSort: _onSort2),
         DataColumn(label: const Text('Harga ke-3'), onSort: _onSort2),
       ],
       rows: List.generate(produkList.length, (index) {
         final item = produkList[index];
-        final harga = item['harga'] as List<dynamic>? ?? [];
+        final harga = item['harga_terakhir'] as List<dynamic>? ?? [];
         return DataRow(cells: [
           DataCell(Text('${index + 1}')),
-          DataCell(Text(item['nama_produk']?.toString() ?? '-',
+          DataCell(Text(
+              '${item['nama_produk']?.toString() ?? '-'} (${item['kode_produk']?.toString() ?? '-'})',
               style: const TextStyle(fontWeight: FontWeight.bold))),
           DataCell(Text(harga.isNotEmpty ? _formatRupiah(harga[0]) : 'Rp 0')),
           DataCell(Text(harga.length > 1 ? _formatRupiah(harga[1]) : 'Rp 0')),

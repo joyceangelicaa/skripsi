@@ -94,6 +94,27 @@ class CustomerService {
     }
   }
 
+  static Future<double?> getCustomerHarga({
+    required String kodeProduk,
+    required int idCustomer,
+  }) async {
+    final response = await http
+        .get(
+          Uri.parse("$baseUrl/customer/harga/$kodeProduk/$idCustomer/1"),
+          headers: _authHeaders(),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      final data = result['data'] as List;
+      if (data.isNotEmpty) {
+        return (data[0]['harga'] as num).toDouble();
+      }
+    }
+    return null;
+  }
+
   static Future<void> deleteCustomer(int idCustomer) async {
     final response = await http
         .delete(

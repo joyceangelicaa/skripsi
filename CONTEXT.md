@@ -11,7 +11,7 @@ _Avoid_: Toko Angel app (redundant)
 **Brand Personality**:
 Modern & profesional. Warna dark slate sebagai primary dengan aksen gold/amber.
 
-**Laba Kotor**:
+**Pendapatan**:
 Total pendapatan penjualan (penjualan.total_harga) tanpa dikurangi biaya apapun.
 
 **Pengeluaran**:
@@ -27,4 +27,4 @@ Produk dengan stok > 0 yang berada di atau di bawah reorder point (ROP).
 Produk dengan stok = 0.
 
 **Dashboard Periode**:
-Rentang tanggal (start_date, end_date) yang memfilter semua metrik dashboard. Default: bulan berjalan (tanggal 1 sampai hari ini).
+Rentang tanggal (start_date, end_date) yang memfilter semua metrik dashboard. Default: 30 hari terakhir (H-30 sampai hari ini).

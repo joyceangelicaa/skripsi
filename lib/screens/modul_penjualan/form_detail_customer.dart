@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../service/customer_service.dart';
+import '../../../service/penjualan_service.dart';
+import '../../../service/produk_service.dart';
 import '../../global_widget/table.dart';
 
 class FormDetailCustomer extends StatefulWidget {
@@ -15,10 +17,10 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
   Map<String, dynamic>? customer;
   bool isLoadingCustomer = true;
 
-  final List<Map<String, dynamic>> dummyPenjualan = [];
+  List<dynamic> penjualanList = [];
   bool isLoadingPenjualan = true;
 
-  final List<Map<String, dynamic>> dummyProduk = [];
+  List<dynamic> produkList = [];
   bool isLoadingProduk = true;
 
   int? _sortColumnIndex1 = 1;
@@ -30,8 +32,8 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
   void initState() {
     super.initState();
     fetchDetail();
-    _loadDummyPenjualan();
-    _loadDummyProduk();
+    fetchPenjualan();
+    fetchProduk();
   }
 
   Future<void> fetchDetail() async {
@@ -43,36 +45,28 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
     }
   }
 
-  Future<void> _loadDummyPenjualan() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() {
-      dummyPenjualan.addAll([
-        {'id_penjualan': 101, 'tanggal': '2026-06-10', 'total_harga': 450000, 'status': 'Selesai'},
-        {'id_penjualan': 102, 'tanggal': '2026-06-08', 'total_harga': 275000, 'status': 'Selesai'},
-        {'id_penjualan': 103, 'tanggal': '2026-06-05', 'total_harga': 1100000, 'status': 'Selesai'},
-        {'id_penjualan': 104, 'tanggal': '2026-06-01', 'total_harga': 180000, 'status': 'Selesai'},
-        {'id_penjualan': 105, 'tanggal': '2026-05-28', 'total_harga': 650000, 'status': 'Selesai'},
-        {'id_penjualan': 106, 'tanggal': '2026-05-25', 'total_harga': 325000, 'status': 'Selesai'},
-        {'id_penjualan': 107, 'tanggal': '2026-05-20', 'total_harga': 890000, 'status': 'Selesai'},
-      ]);
-      isLoadingPenjualan = false;
-    });
+  Future<void> fetchPenjualan() async {
+    try {
+      final data = await PenjualanService.getPenjualanByCustomer(
+        idCustomer: widget.idCustomer,
+        limit: 999,
+      );
+      if (mounted) setState(() { penjualanList = data; isLoadingPenjualan = false; });
+    } catch (e) {
+      if (mounted) setState(() => isLoadingPenjualan = false);
+    }
   }
 
-  Future<void> _loadDummyProduk() async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() {
-      dummyProduk.addAll([
-        {'nama_produk': 'Beras Premium 5kg', 'harga': [14500, 14200, 14000]},
-        {'nama_produk': 'Minyak Goreng 2L', 'harga': [32000, 31000, 30500]},
-        {'nama_produk': 'Gula Pasir 1kg', 'harga': [14000, 13500, 13000]},
-        {'nama_produk': 'Tepung Terigu 1kg', 'harga': [12000, 11500, 11000]},
-        {'nama_produk': 'Telur Ayam 1kg', 'harga': [28000, 27500, 27000]},
-      ]);
-      isLoadingProduk = false;
-    });
+  Future<void> fetchProduk() async {
+    try {
+      final data = await ProdukService.getProdukByCustomer(
+        idCustomer: widget.idCustomer,
+        limit: 999,
+      );
+      if (mounted) setState(() { produkList = data; isLoadingProduk = false; });
+    } catch (e) {
+      if (mounted) setState(() => isLoadingProduk = false);
+    }
   }
 
   void _onSort1(int columnIndex, bool ascending) {
@@ -87,11 +81,11 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
     if (_sortColumnIndex1 == null) return;
     final ci = _sortColumnIndex1!;
     final asc = _sortAscending1;
-    dummyPenjualan.sort((a, b) {
+    penjualanList.sort((a, b) {
       int result;
       switch (ci) {
-        case 1: result = (a['id_penjualan']?.toString() ?? '').compareTo(b['id_penjualan']?.toString() ?? ''); break;
-        case 2: result = (a['tanggal']?.toString() ?? '').compareTo(b['tanggal']?.toString() ?? ''); break;
+        case 1: result = (a['nomer_penjualan']?.toString() ?? '').compareTo(b['nomer_penjualan']?.toString() ?? ''); break;
+        case 2: result = (a['tanggal_penjualan']?.toString() ?? '').compareTo(b['tanggal_penjualan']?.toString() ?? ''); break;
         case 3: result = ((a['total_harga'] ?? 0) as num).compareTo((b['total_harga'] ?? 0) as num); break;
         default: return 0;
       }
@@ -111,7 +105,7 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
     if (_sortColumnIndex2 == null) return;
     final ci = _sortColumnIndex2!;
     final asc = _sortAscending2;
-    dummyProduk.sort((a, b) {
+    produkList.sort((a, b) {
       int result;
       switch (ci) {
         case 1: result = (a['nama_produk']?.toString() ?? '').compareTo(b['nama_produk']?.toString() ?? ''); break;
@@ -225,7 +219,7 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (dummyPenjualan.isEmpty) {
+    if (penjualanList.isEmpty) {
       return const Center(child: Text('Belum ada riwayat penjualan'));
     }
 
@@ -234,17 +228,17 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
       sortAscending: _sortAscending1,
       columns: [
         const DataColumn(label: Text('No')),
-        DataColumn(label: const Text('ID Penjualan'), onSort: _onSort1),
+        DataColumn(label: const Text('No. Penjualan'), onSort: _onSort1),
         DataColumn(label: const Text('Tanggal'), onSort: _onSort1),
         DataColumn(label: const Text('Total Harga'), onSort: _onSort1),
       ],
-      rows: List.generate(dummyPenjualan.length, (index) {
-        final item = dummyPenjualan[index];
+      rows: List.generate(penjualanList.length, (index) {
+        final item = penjualanList[index];
         return DataRow(cells: [
           DataCell(Text('${index + 1}')),
-          DataCell(Text(item['id_penjualan']?.toString() ?? '-',
+          DataCell(Text(item['nomer_penjualan']?.toString() ?? '-',
               style: const TextStyle(fontWeight: FontWeight.bold))),
-          DataCell(Text(_formatTanggal(item['tanggal']?.toString()))),
+          DataCell(Text(_formatTanggal(item['tanggal_penjualan']?.toString()))),
           DataCell(Text(_formatRupiah(item['total_harga']))),
         ]);
       }),
@@ -256,7 +250,7 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (dummyProduk.isEmpty) {
+    if (produkList.isEmpty) {
       return const Center(child: Text('Belum ada riwayat produk'));
     }
 
@@ -265,17 +259,18 @@ class _FormDetailCustomerState extends State<FormDetailCustomer> {
       sortAscending: _sortAscending2,
       columns: [
         const DataColumn(label: Text('No')),
-        DataColumn(label: const Text('Nama Produk'), onSort: _onSort2),
+        DataColumn(label: const Text('Produk'), onSort: _onSort2),
         DataColumn(label: const Text('Harga Terakhir'), onSort: _onSort2),
         DataColumn(label: const Text('Harga ke-2'), onSort: _onSort2),
         DataColumn(label: const Text('Harga ke-3'), onSort: _onSort2),
       ],
-      rows: List.generate(dummyProduk.length, (index) {
-        final item = dummyProduk[index];
+      rows: List.generate(produkList.length, (index) {
+        final item = produkList[index];
         final harga = item['harga'] as List<dynamic>? ?? [];
         return DataRow(cells: [
           DataCell(Text('${index + 1}')),
-          DataCell(Text(item['nama_produk']?.toString() ?? '-',
+          DataCell(Text(
+              '${item['nama_produk']?.toString() ?? '-'} (${item['kode_produk']?.toString() ?? '-'})',
               style: const TextStyle(fontWeight: FontWeight.bold))),
           DataCell(Text(harga.isNotEmpty ? _formatRupiah(harga[0]) : 'Rp 0')),
           DataCell(Text(harga.length > 1 ? _formatRupiah(harga[1]) : 'Rp 0')),

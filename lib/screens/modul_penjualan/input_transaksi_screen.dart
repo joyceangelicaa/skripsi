@@ -26,6 +26,8 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
 
   List<Map<String, dynamic>> _listBarang = [];
 
+  final Set<int> _loadingHarga = {};
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +92,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
 
   void _tambahBarisBarang() {
     setState(() {
-      _listBarang.add({'qty': TextEditingController(), 'barang': '', 'harga': '0', 'total': '0',
+      _listBarang.add({'qty': TextEditingController(), 'barang': '', 'kode_produk': '', 'harga': '0', 'total': '0',
       'harga_controller': TextEditingController(),});
     });
   }
@@ -99,6 +101,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
     _listBarang[index]['harga_controller']?.dispose();
     setState(() {
       _listBarang.removeAt(index);
+      _loadingHarga.remove(index);
     });
   }
 
@@ -299,14 +302,9 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
 
                                     //simpan detail penjualan
                                     final details = _listBarang.map((item){
-                                      final matched = _produkList.firstWhere((p){
-                                        final nama = p is Map<String,dynamic> ? p['nama_produk'] : p.namaProduk;
-                                        return nama == item['barang'];
-                                      });
-                                      final kodeProduk = matched is Map<String, dynamic> ? matched['kode_produk'] ?? '' : matched.kodeProduk ?? '';
                                       return {
                                         'nomer_penjualan': nomerPenjualan,
-                                        'kode_produk': kodeProduk,
+                                        'kode_produk': item['kode_produk'] ?? '',
                                         'quantity': int.tryParse(item['qty'].text) ?? 1,
                                         'harga_jual': double.tryParse(item['harga'] ?? '0') ?? 0,
                                       };
@@ -476,39 +474,44 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
           flex: 3,
           child: Autocomplete<String>(
             optionsBuilder: (textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return _produkList.map((p) => p is Map<String, dynamic>
-                    ? p['nama_produk']?.toString() ?? ''
-                    : '').where((n) => n.isNotEmpty);
-              }
+              final list = _produkList.map((p) {
+                if (p is Map<String, dynamic>) {
+                  final nama = p['nama_produk']?.toString() ?? '';
+                  final kode = p['kode_produk']?.toString() ?? '';
+                  return '$nama ($kode)';
+                }
+                return '';
+              }).where((n) => n.isNotEmpty);
+              if (textEditingValue.text.isEmpty) return list;
               final query = textEditingValue.text.toLowerCase();
-              return _produkList.map((p) => p is Map<String, dynamic>
-                  ? p['nama_produk']?.toString() ?? ''
-                  : '').where((n) => n.isNotEmpty && n.toLowerCase().contains(query));
+              return list.where((n) => n.toLowerCase().contains(query));
             },
             onSelected: (selection) {
+              final match = RegExp(r'\(([^)]+)\)$').firstMatch(selection);
+              final kode = match?.group(1) ?? '';
               final matched = _produkList.firstWhere((p) {
-                final nama = p is Map<String, dynamic> ? p['nama_produk'] : '';
-                return nama == selection;
+                final pkode = p is Map<String, dynamic> ? p['kode_produk'] : '';
+                return pkode == kode;
               });
               final hargaJual = matched is Map<String, dynamic>
                   ? (matched['harga_jual'] ?? 0).toString()
                   : '0';
               setState(() {
                 _listBarang[index]['barang'] = selection;
+                _listBarang[index]['kode_produk'] = kode;
                 _listBarang[index]['harga'] = hargaJual;
                 (_listBarang[index]['harga_controller'] as TextEditingController).text = hargaJual;
               });
               _updateTotalRow(index);
+              if (_selectedCustomerId != 0 && kode.isNotEmpty) {
+                _fetchCustomerHarga(index, kode);
+              }
             },
             fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
               return TextField(
                 controller: textEditingController,
                 focusNode: focusNode,
                 decoration: _inputStyle().copyWith(hintText: 'Cari Barang...'),
-                onChanged: (val) {
-                  _listBarang[index]['barang'] = val;
-                },
               );
             },
           ),
@@ -546,6 +549,31 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _fetchCustomerHarga(int index, String kodeProduk) async {
+    setState(() => _loadingHarga.add(index));
+    (_listBarang[index]['harga_controller'] as TextEditingController).text = 'Memuat...';
+    try {
+      final harga = await CustomerService.getCustomerHarga(
+        kodeProduk: kodeProduk,
+        idCustomer: _selectedCustomerId,
+      );
+      if (!mounted || index >= _listBarang.length) return;
+      if (harga != null) {
+        final hargaStr = harga.toStringAsFixed(0);
+        setState(() {
+          _listBarang[index]['harga'] = hargaStr;
+          (_listBarang[index]['harga_controller'] as TextEditingController).text = hargaStr;
+          _loadingHarga.remove(index);
+        });
+        _updateTotalRow(index);
+      } else {
+        setState(() => _loadingHarga.remove(index));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingHarga.remove(index));
+    }
   }
 
   void _updateTotalRow(int index) {
