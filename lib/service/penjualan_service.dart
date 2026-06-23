@@ -13,6 +13,26 @@ class PenjualanService {
   }
 
   // =========================
+  // GET PENJUALAN BY CUSTOMER
+  // =========================
+  static Future<List<dynamic>> getPenjualanByCustomer({
+    required int idCustomer,
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse(
+        "$baseUrl/customer/$idCustomer?limit=$limit&offset=$offset");
+    final res = await http.get(uri, headers: _authHeaders());
+
+    if (res.statusCode == 200) {
+      final result = jsonDecode(res.body);
+      return result['data'] as List<dynamic>;
+    } else {
+      throw Exception('Gagal ambil penjualan by customer (${res.statusCode})');
+    }
+  }
+
+  // =========================
   // GET ALL PENJUALAN
   // =========================
   static Future<List<Map<String, dynamic>>> getAllPenjualan({

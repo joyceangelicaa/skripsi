@@ -65,7 +65,7 @@ class _SidebarState extends State<Sidebar> {
                   const Padding(
                     padding: EdgeInsets.only(left: 10.0),
                     child: Text(
-                      'Menu Utama',
+                      'Toko Angel',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -303,7 +303,7 @@ class _SidebarState extends State<Sidebar> {
           // Header
           const Center(
             child: Text(
-              'Menu Utama',
+              'Toko Angel',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,

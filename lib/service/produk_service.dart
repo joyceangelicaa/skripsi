@@ -60,6 +60,29 @@ class ProdukService {
     }
   }
 
+  // =========================
+  // GET ALL PRODUK BY CUSTOMER
+  // =========================
+  static Future<List<dynamic>> getProdukByCustomer({
+    required int idCustomer,
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse(
+        "$baseUrl/produk/customer/$idCustomer?limit=$limit&offset=$offset");
+
+    final response = await http
+        .get(uri, headers: _authHeaders())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
+    } else {
+      throw Exception('Gagal ambil produk by customer (${response.statusCode})');
+    }
+  }
+
   static Future<Map<String, dynamic>> getDetailProduk(String kode) async {
     final response = await http
         .get(
