@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../global_widget/app_bar.dart';
 import '../../service/dashboard_service.dart';
+import '../../service/reorder_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,21 +23,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _pembelianProses = 0;
   int _pembelianSelesai = 0;
   bool _isLoading = true;
+  List<Map<String, dynamic>> _barangMenipis = [];
+  List<Map<String, dynamic>> _barangHabis = []; 
 
-  final List<Map<String, dynamic>> dummyBarangMenipis = [
-    {'nama': 'Beras 5kg', 'qty': 5, 'rop': 10},
-    {'nama': 'Gula Pasir 1kg', 'qty': 3, 'rop': 8},
-    {'nama': 'Minyak Goreng 2L', 'qty': 2, 'rop': 5},
-    {'nama': 'Telur 1kg', 'qty': 4, 'rop': 6},
-    {'nama': 'Kopi Bubuk 200g', 'qty': 1, 'rop': 3},
-  ];
+  // final List<Map<String, dynamic>> dummyBarangMenipis = [
+  //   {'nama': 'Beras 5kg', 'qty': 5, 'rop': 10},
+  //   {'nama': 'Gula Pasir 1kg', 'qty': 3, 'rop': 8},
+  //   {'nama': 'Minyak Goreng 2L', 'qty': 2, 'rop': 5},
+  //   {'nama': 'Telur 1kg', 'qty': 4, 'rop': 6},
+  //   {'nama': 'Kopi Bubuk 200g', 'qty': 1, 'rop': 3},
+  // ];
 
-  final List<Map<String, dynamic>> dummyBarangHabis = [
-    {'nama': 'Susu Kental Manis', 'qty': 0, 'rop': 10},
-    {'nama': 'Mie Instan Goreng', 'qty': 0, 'rop': 20},
-    {'nama': 'Saos Tomat', 'qty': 0, 'rop': 5},
-    {'nama': 'Kecap Manis', 'qty': 0, 'rop': 8},
-  ];
+  // final List<Map<String, dynamic>> dummyBarangHabis = [
+  //   {'nama': 'Susu Kental Manis', 'qty': 0, 'rop': 10},
+  //   {'nama': 'Mie Instan Goreng', 'qty': 0, 'rop': 20},
+  //   {'nama': 'Saos Tomat', 'qty': 0, 'rop': 5},
+  //   {'nama': 'Kecap Manis', 'qty': 0, 'rop': 8},
+  // ];
 
   List<double> _penjualanHarian = [];
   List<String> _tanggalPenjualan = [];
@@ -94,6 +97,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
+      await ReorderService.hitungSemua();
+
       final results = await Future.wait([
         DashboardService.getPendapatan(startDate: _startDate, endDate: _endDate),
         DashboardService.getPengeluaran(startDate: _startDate, endDate: _endDate),
@@ -101,6 +106,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         DashboardService.getProdukTerlaris(startDate: _startDate, endDate: _endDate),
         DashboardService.getPenjualanHarian(startDate: _startDate, endDate: _endDate),
       ]);
+
+      // 3. Ambil rekomendasi & pisahkan Menipis vs Habis
+      final rekomendasi = await ReorderService.getRekomendasi(limit: 999, offset: 0);
+      final items = rekomendasi['items'] as List<dynamic>;
+      final menipis = <Map<String, dynamic>>[];
+      final habis = <Map<String, dynamic>>[];
+      for (var item in items) {
+        if (item['stok_produk'] == 0) {
+          habis.add(item as Map<String, dynamic>);
+        } else {
+          menipis.add(item as Map<String, dynamic>);
+        }
+      }
+
       setState(() {
         _pendapatan = results[0] as double;
         _pengeluaran = results[1] as double;
@@ -121,6 +140,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _tanggalPenjualan = harian
             .map<String>((e) => e['tanggal'] as String)
             .toList();
+        _barangMenipis = menipis;
+        _barangHabis = habis;    
         _isLoading = false;
       });
     } catch (e) {
@@ -347,9 +368,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildRopListCard('Barang Menipis', dummyBarangMenipis, const Color(0xFFF59E0B))),
+        Expanded(child: _buildRopListCard('Barang Menipis', _barangMenipis, const Color(0xFFF59E0B))),
         const SizedBox(width: 20),
-        Expanded(child: _buildRopListCard('Barang Habis', dummyBarangHabis, const Color(0xFFEF4444), showStok: false)),
+        Expanded(child: _buildRopListCard('Barang Habis', _barangHabis, const Color(0xFFEF4444), showStok: true)),
       ],
     );
   }
@@ -428,65 +449,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          ...items.map((item) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: const Color(0xFFF1F5F9)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: showStok ? 3 : 4,
-                  child: Text(
-                    item['nama'] as String,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      color: Color(0xFF334155),
-                    ),
-                  ),
-                ),
-                if (showStok)
-                  Expanded(
-                    flex: 1,
-                    child: Text(
-                      '${item['qty']}',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: item['qty'] == 0 ? const Color(0xFFEF4444) : const Color(0xFF334155),
-                      ),
-                    ),
-                  ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    '${item['rop']}',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          )),
           if (items.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
+            const SizedBox(
+              height: 260,
               child: Center(
                 child: Text(
                   'Tidak ada data',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
-                    color: const Color(0xFF94A3B8),
+                    color: Color(0xFF94A3B8),
                   ),
                 ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 260,
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                itemBuilder: (_, i) {
+                  final item = items[i];
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: showStok ? 3 : 4,
+                          child: Text(
+                            item['nama_produk'] as String,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                        if (showStok)
+                          Expanded(
+                            flex: 1,
+                            child: Text(
+                              '${item['stok_produk']}',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: item['stok_produk'] == 0 ? const Color(0xFFEF4444) : const Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            '${item['reorder_point']}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
         ],

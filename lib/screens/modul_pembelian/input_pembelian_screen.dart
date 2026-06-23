@@ -48,8 +48,11 @@ class _InputPembelianState extends State<InputPembelianScreen> {
       'barang': '',
       'qty_controller': TextEditingController(),
       'harga_controller': TextEditingController(),
+      'rekomendasi':0,
     }
   ];
+
+  int _autocompleteRefreshKey = 0;
 
   @override
   void initState() {
@@ -94,6 +97,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
         'barang': '',
         'qty_controller': TextEditingController(),
         'harga_controller': TextEditingController(),
+        'rekomendasi': 0,
       });
     });
   }
@@ -299,11 +303,13 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                     Row(
                       children: [
                         Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
-                        Expanded(flex: 1, child: Text('Hrg', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
+                        const SizedBox(width: 12),
+                        Expanded(flex: 1, child: Text('Harga Beli', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                        const SizedBox(width: 12),
+                        Expanded(flex: 1, child: Text('Rekomdasi Pembelian', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                        const SizedBox(width: 12),
                         Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 58),
+                        const SizedBox(width: 10),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -416,6 +422,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
           Expanded(
             flex: 3,
             child: Autocomplete<String>(
+              key: ValueKey('ac_${index}_$_autocompleteRefreshKey'),
               optionsBuilder: (textEditingValue) {
                 if (textEditingValue.text.isEmpty) {
                   return _products.map((p) => p['nama_produk']?.toString() ?? '')
@@ -425,11 +432,108 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                 return _products.map((p) => p['nama_produk']?.toString() ?? '')
                     .where((n) => n.isNotEmpty && n.toLowerCase().contains(query));
               },
-              onSelected: (selection) {
+              onSelected: (selection) async {
                 final match = _products.firstWhere((p) => p['nama_produk'] == selection);
+                final rop = (match['reorder_point'] ?? 0) as int;
+                final stok = (match['stok_produk'] ?? 0) as int;
+                final safety = (match['safety_stock'] ?? 0) as int;
+                int rekomendasi;
+                if (stok > rop) {
+                  rekomendasi = 0;
+                } else {
+                  rekomendasi = rop - stok + safety;
+                  if (rekomendasi < 0) rekomendasi = 0;
+                }0;
+
+                if (stok > rop) {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => Dialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Container(
+                        width: 400,
+                        padding: const EdgeInsets.all(30.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.inventory_2_outlined,
+                                color: Colors.amber, size: 80),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Stok Masih Banyak',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '"$selection"\n\n'
+                              'Stok saat ini: $stok unit\n'
+                              'Batas ROP: $rop unit\n\n'
+                              'Stok masih di atas ROP.\n'
+                              'Yakin akan membeli barang ini?',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 30),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.grey.shade700,
+                                      side: BorderSide(color: Colors.grey.shade300),
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('Batal',
+                                        style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1E293B),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text('Ya, Lanjutkan',
+                                        style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+
+                  if (confirmed != true) {
+                    setState(() => _autocompleteRefreshKey++);
+                    return;
+                  }
+                }
+
                 setState(() {
                   item['kode_produk'] = match['kode_produk'];
                   item['barang'] = selection;
+                  item['rekomendasi'] = rekomendasi;
                 });
               },
               fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
@@ -447,7 +551,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
               },
             ),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
           Expanded(
             flex: 1,
             child: TextField(
@@ -458,7 +562,20 @@ class _InputPembelianState extends State<InputPembelianScreen> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 1,
+            child: TextField(
+              controller: TextEditingController(text: '${item['rekomendasi'] ?? 0}'),
+              readOnly: true,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              decoration: _inputStyle(readOnly: true).copyWith(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             flex: 1,
             child: TextField(

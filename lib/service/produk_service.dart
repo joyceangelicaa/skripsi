@@ -116,7 +116,7 @@ class ProdukService {
   }
 
   static Future<void> editProduk(Map<String, dynamic> data) async {
-    data['reorder_point'] = 0;
+    // data['reorder_point'] = 0;
 
     final response = await http
         .put(

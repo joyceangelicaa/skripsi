@@ -22,7 +22,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
   late TextEditingController kode;
   late TextEditingController nama;
   late TextEditingController harga;
-  late TextEditingController stok;
+  // late TextEditingController stok;
   late TextEditingController safety;
   bool isLoading = false;
   @override
@@ -31,7 +31,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
     kode = TextEditingController(text: widget.kodeAwal);
     nama = TextEditingController(text: widget.namaAwal);
     harga = TextEditingController(text: widget.hargaAwal);
-    stok = TextEditingController(text: widget.stokAwal);
+    // stok = TextEditingController(text: widget.stokAwal);
     safety = TextEditingController(text: widget.safetyStokAwal);
   }
   @override
@@ -60,7 +60,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildField(label: 'Stok', controller: stok, isNumber: true),
+                    child: _buildReadOnlyField(label: 'Stok', value: widget.stokAwal),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
@@ -84,7 +84,6 @@ class _FormEditProdukState extends State<FormEditProduk> {
                   if (kode.text.isEmpty ||
                       nama.text.isEmpty ||
                       harga.text.isEmpty ||
-                      stok.text.isEmpty ||
                       safety.text.isEmpty) {
                     showDialog(
                       context: context,
@@ -99,15 +98,14 @@ class _FormEditProdukState extends State<FormEditProduk> {
                   setState(() => isLoading = true);
                   try {
                     final hargaVal = double.tryParse(harga.text);
-                    final stokVal = int.tryParse(stok.text);
                     final safetyVal = int.tryParse(safety.text);
-                    if (hargaVal == null || stokVal == null || safetyVal == null) {
+                    if (hargaVal == null || safetyVal == null) {
                       showDialog(
                         context: context,
                         builder: (context) => const ConfirmationDialog(
                           isSuccess: false,
                           title: 'Format Salah',
-                          message: 'Harga, Stok, dan Safety Stok harus berupa angka.',
+                          message: 'Harga dan Safety Stok harus berupa angka.',
                         ),
                       );
                       setState(() => isLoading = false);
@@ -117,7 +115,6 @@ class _FormEditProdukState extends State<FormEditProduk> {
                       "kode_produk": kode.text,
                       "nama_produk": nama.text,
                       "harga_jual": hargaVal,
-                      "stok_produk": stokVal,
                       "safety_stock": safetyVal,
                     });
                     Navigator.pop(context);
@@ -158,6 +155,36 @@ class _FormEditProdukState extends State<FormEditProduk> {
       ],
     );
   }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   Widget _buildField({
     required String label,
     required TextEditingController controller,

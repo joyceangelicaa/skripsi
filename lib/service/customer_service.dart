@@ -107,7 +107,7 @@ class CustomerService {
 
     if (response.statusCode == 200) {
       final result = jsonDecode(response.body);
-      final data = result['data'] as List;
+      final data = result as List;
       if (data.isNotEmpty) {
         return (data[0]['harga'] as num).toDouble();
       }
