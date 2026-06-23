@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'user_service.dart';
 
@@ -98,17 +99,22 @@ class CustomerService {
     required String kodeProduk,
     required int idCustomer,
   }) async {
+    final url = "$baseUrl/customer/harga/$kodeProduk/$idCustomer/1";
+    debugPrint('GET $url');
     final response = await http
         .get(
-          Uri.parse("$baseUrl/customer/harga/$kodeProduk/$idCustomer/1"),
+          Uri.parse(url),
           headers: _authHeaders(),
         )
         .timeout(const Duration(seconds: 10));
 
+    debugPrint('Response status: ${response.statusCode}');
+    debugPrint('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
-      final result = jsonDecode(response.body);
-      final data = result as List;
-      if (data.isNotEmpty) {
+      final result = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = result['data'] as List?;
+      if (data != null && data.isNotEmpty) {
         return (data[0]['harga'] as num).toDouble();
       }
     }

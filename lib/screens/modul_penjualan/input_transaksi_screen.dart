@@ -93,7 +93,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
   void _tambahBarisBarang() {
     setState(() {
       _listBarang.add({'qty': TextEditingController(), 'barang': '', 'kode_produk': '', 'harga': '0', 'total': '0',
-      'harga_controller': TextEditingController(),});
+      'harga_controller': TextEditingController(), 'harga_default': '0',});
     });
   }
 
@@ -425,7 +425,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                     ? matched['id_customer'] ?? 0
                     : 0;
               });
-              // _generatePenjualan();
+              _refetchAllHarga();
             },
             fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
               return TextField(
@@ -500,6 +500,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                 _listBarang[index]['barang'] = selection;
                 _listBarang[index]['kode_produk'] = kode;
                 _listBarang[index]['harga'] = hargaJual;
+                _listBarang[index]['harga_default'] = hargaJual;
                 (_listBarang[index]['harga_controller'] as TextEditingController).text = hargaJual;
               });
               _updateTotalRow(index);
@@ -519,14 +520,28 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
         const SizedBox(width: 15),
         Expanded(
           flex: 2,
-          child: TextField(
-            controller: item['harga_controller'],
-            keyboardType: TextInputType.number,
-            decoration: _inputStyle().copyWith(prefixText: 'Rp '),
-            onChanged: (val) {
-              _listBarang[index]['harga'] = val;
-              _updateTotalRow(index);
-            },
+          child: Stack(
+            alignment: Alignment.centerRight,
+            children: [
+              TextField(
+                controller: item['harga_controller'],
+                keyboardType: TextInputType.number,
+                decoration: _inputStyle().copyWith(prefixText: 'Rp '),
+                onChanged: (val) {
+                  _listBarang[index]['harga'] = val;
+                  _updateTotalRow(index);
+                },
+              ),
+              if (_loadingHarga.contains(index))
+                const Positioned(
+                  right: 8,
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+            ],
           ),
         ),
         const SizedBox(width: 15),
@@ -552,9 +567,13 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
   }
 
   Future<void> _fetchCustomerHarga(int index, String kodeProduk) async {
+    if (index >= _listBarang.length) return;
+    final defaultHarga = _listBarang[index]['harga_default'] as String? ?? '0';
     setState(() => _loadingHarga.add(index));
     (_listBarang[index]['harga_controller'] as TextEditingController).text = 'Memuat...';
     try {
+      debugPrint('--- getCustomerHarga ---');
+      debugPrint('URL: /customer/harga/$kodeProduk/$_selectedCustomerId/1');
       final harga = await CustomerService.getCustomerHarga(
         kodeProduk: kodeProduk,
         idCustomer: _selectedCustomerId,
@@ -564,16 +583,41 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
         final hargaStr = harga.toStringAsFixed(0);
         setState(() {
           _listBarang[index]['harga'] = hargaStr;
+          _listBarang[index]['harga_default'] = hargaStr;
           (_listBarang[index]['harga_controller'] as TextEditingController).text = hargaStr;
           _loadingHarga.remove(index);
         });
         _updateTotalRow(index);
       } else {
-        setState(() => _loadingHarga.remove(index));
+        debugPrint('Response: null (no prior price)');
+        _restoreDefaultHarga(index, defaultHarga);
       }
     } catch (e) {
-      if (mounted) setState(() => _loadingHarga.remove(index));
+      debugPrint('ERROR getCustomerHarga: $e');
+      if (mounted) _restoreDefaultHarga(index, defaultHarga);
     }
+  }
+
+  Future<void> _refetchAllHarga() async {
+    if (_selectedCustomerId == 0) return;
+    final futures = <Future<void>>[];
+    for (int i = 0; i < _listBarang.length; i++) {
+      final kode = _listBarang[i]['kode_produk'] as String? ?? '';
+      if (kode.isNotEmpty) {
+        futures.add(_fetchCustomerHarga(i, kode));
+      }
+    }
+    await Future.wait(futures);
+  }
+
+  void _restoreDefaultHarga(int index, String defaultHarga) {
+    if (index >= _listBarang.length) return;
+    setState(() {
+      _listBarang[index]['harga'] = defaultHarga;
+      (_listBarang[index]['harga_controller'] as TextEditingController).text = defaultHarga;
+      _loadingHarga.remove(index);
+    });
+    _updateTotalRow(index);
   }
 
   void _updateTotalRow(int index) {
