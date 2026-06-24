@@ -14,10 +14,7 @@ class InputPembelianScreen extends StatefulWidget {
 }
 
 class _InputPembelianState extends State<InputPembelianScreen> {
-  String get _tanggalDisplay {
-    final now = DateTime.now();
-    return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
-  }
+  DateTime _tanggalPembelian = DateTime.now();
 
   int get _totalHarga {
     int total = 0;
@@ -185,7 +182,11 @@ class _InputPembelianState extends State<InputPembelianScreen> {
       //   throw Exception("ID Pembelian belum digenerate, pilih supplier terlebih dahulu");
       // }
 
-      final generatedId = await PembelianService.addPembelian(idSupplier: idSupplier);
+      final formattedDate = '${_tanggalPembelian.year}-${_tanggalPembelian.month.toString().padLeft(2, '0')}-${_tanggalPembelian.day.toString().padLeft(2, '0')}';
+      final generatedId = await PembelianService.addPembelian(
+        idSupplier: idSupplier,
+        tanggalPembelian: formattedDate,
+      );
 
       final detailPayload = details.map((d) => {
         'id_pembelian': generatedId,
@@ -271,7 +272,11 @@ class _InputPembelianState extends State<InputPembelianScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // --- HEADER PEMBELIAN ---
-                    _buildReadOnlyField(label: 'Tanggal Pembelian', value: _tanggalDisplay),
+                    _buildDatePickerField(
+                      label: 'Tanggal Pembelian',
+                      selectedDate: _tanggalPembelian,
+                      onChanged: (date) => setState(() => _tanggalPembelian = date),
+                    ),
                     _buildSupplierDropdown(),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 10.0),
@@ -617,6 +622,52 @@ class _InputPembelianState extends State<InputPembelianScreen> {
       ),
     );
   }
+
+  Widget _buildDatePickerField({
+  required String label,
+  required DateTime selectedDate,
+  required ValueChanged<DateTime> onChanged,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 15),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2030),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   String _formatRupiah(num value) {
     final str = value.toStringAsFixed(0).split('').reversed.toList();

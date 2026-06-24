@@ -22,9 +22,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // GET ALL PEMBELIAN
-  // =========================
   static Future<List<Map<String, dynamic>>> getAllPembelian({
     int limit = 10,
     int offset = 0,
@@ -72,9 +70,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // GET PEMBELIAN BY SUPPLIER
-  // =========================
   static Future<List<dynamic>> getPembelianBySupplier({
     required int idSupplier,
     int limit = 10,
@@ -97,9 +93,7 @@ class PembelianService {
     }
   }
   
-  // =========================
   // GET DETAIL PEMBELIAN
-  // =========================
   static Future<Map<String, dynamic>> getDetailPembelian(String idPembelian) async {
     final uri = Uri.parse("$baseUrl/$idPembelian");
     final res = await http.get(
@@ -127,15 +121,17 @@ class PembelianService {
     }
   }
 
-  // =========================
   // ADD PEMBELIAN (HEADER ONLY)
-  // =========================
   static Future<String> addPembelian({
-    required int idSupplier,
+  required int idSupplier,
+  String? tanggalPembelian,
   }) async {
-    final body = {
+    final body = <String, dynamic> {
       "id_supplier": idSupplier,
     };
+    if (tanggalPembelian != null && tanggalPembelian.isNotEmpty) {
+      body["tanggal_pembelian"] = tanggalPembelian;
+    }
 
     final res = await http.post(
       Uri.parse(baseUrl),
@@ -159,9 +155,7 @@ class PembelianService {
     return data['id_pembelian'] as String;
   }
 
-  // =========================
   // ADD DETAIL PEMBELIAN
-  // =========================
   static Future<void> addDetailPembelian(
     List<Map<String, dynamic>> details,
   ) async {
@@ -177,9 +171,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // EDIT PEMBELIAN (HEADER ONLY)
-  // =========================
   static Future<void> editPembelian({
     required String idPembelian,
     required int idSupplier,
@@ -201,9 +193,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // EDIT DETAIL PEMBELIAN
-  // =========================
   static Future<void> editDetailPembelian({
     required String idPembelian,
     required List<Map<String, dynamic>> details,
@@ -225,9 +215,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // DELETE PEMBELIAN
-  // =========================
   static Future<void> deletePembelian(String idPembelian) async {
     final res = await http.delete(
       Uri.parse("$baseUrl/$idPembelian"),
@@ -240,9 +228,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // DELETE DETAIL PEMBELIAN
-  // =========================
   static Future<void> deleteDetailPembelian(int idDetailPembelian) async {
     final res = await http.delete(
       Uri.parse("$baseUrl/detail/$idDetailPembelian"),
@@ -255,9 +241,7 @@ class PembelianService {
     }
   }
 
-  // =========================
   // SELESAIKAN PEMBELIAN
-  // =========================
   static Future<void> selesaiPembelian(String idPembelian) async {
     final res = await http.put(
       Uri.parse("$baseUrl/$idPembelian/selesai"),

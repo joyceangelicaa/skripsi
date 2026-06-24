@@ -12,9 +12,7 @@ class PenjualanService {
     };
   }
 
-  // =========================
   // GET PENJUALAN BY CUSTOMER
-  // =========================
   static Future<List<dynamic>> getPenjualanByCustomer({
     required int idCustomer,
     int limit = 10,
@@ -32,9 +30,7 @@ class PenjualanService {
     }
   }
 
-  // =========================
   // GET ALL PENJUALAN
-  // =========================
   static Future<List<Map<String, dynamic>>> getAllPenjualan({
     int limit = 10,
     int offset = 0,
@@ -56,9 +52,7 @@ class PenjualanService {
     }
   }
 
-  // =========================
   // GET DETAIL PENJUALAN
-  // =========================
   static Future<List<Map<String, dynamic>>> getDetailPenjualan(String nomerPenjualan) async {
     final uri = Uri.parse("$baseUrl/$nomerPenjualan");
     final res = await http.get(
@@ -76,17 +70,19 @@ class PenjualanService {
     throw Exception(resBody['message'] ?? "Gagal ambil detail penjualan");
   }
 
-  // =========================
-  // ADD PENJUALAN (HEADER ONLY) — return nomer_penjualan
-  // =========================
+  // ADD PENJUALAN (HEADER ONLY) 
   static Future<String> addPenjualan({
     required int idCustomer,
     double potonganHarga = 0,
+    String? tanggalPenjualan
   }) async {
-    final body = {
-      "id_customer": idCustomer,
-      "potongan_harga": potonganHarga,
+    final body = <String, dynamic>{
+    "id_customer": idCustomer,
+    "potongan_harga": potonganHarga,
     };
+    if (tanggalPenjualan != null && tanggalPenjualan.isNotEmpty) {
+      body["tanggal_penjualan"] = tanggalPenjualan;
+    }
 
     final res = await http.post(
       Uri.parse(baseUrl),
@@ -107,9 +103,7 @@ class PenjualanService {
     return data['nomer_penjualan'] as String;
   }
 
-  // =========================
   // ADD DETAIL PENJUALAN
-  // =========================
   static Future<void> addDetailPenjualan(
     List<Map<String, dynamic>> details,
   ) async {
@@ -125,9 +119,7 @@ class PenjualanService {
     }
   }
 
-  // =========================
   // EDIT PENJUALAN (HEADER ONLY)
-  // =========================
   static Future<void> editPenjualan({
     required String nomerPenjualan,
     required int idCustomer,
@@ -151,9 +143,7 @@ class PenjualanService {
     }
   }
 
-  // =========================
   // EDIT DETAIL PENJUALAN
-  // =========================
   static Future<void> editDetailPenjualan({
     required String nomerPenjualan,
     required List<Map<String, dynamic>> details,
@@ -175,9 +165,7 @@ class PenjualanService {
     }
   }
 
-  // =========================
   // DELETE DETAIL PENJUALAN
-  // =========================
   static Future<void> deleteDetailPenjualan(int idDetailPenjualan) async {
     final res = await http.delete(
       Uri.parse("$baseUrl/detail/$idDetailPenjualan"),
@@ -190,9 +178,7 @@ class PenjualanService {
     }
   }
 
-  // =========================
   // DELETE PENJUALAN
-  // =========================
   static Future<void> deletePenjualan(String nomerPenjualan) async {
     final res = await http.delete(
       Uri.parse("$baseUrl/$nomerPenjualan"),

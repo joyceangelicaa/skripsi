@@ -12,9 +12,7 @@ class PenerimaanService {
     };
   }
 
-  // =========================
   // GET ALL PENERIMAAN
-  // =========================
   static Future<List<dynamic>> getAllPenerimaan({
     int limit = 10,
     int offset = 0,
@@ -44,9 +42,7 @@ class PenerimaanService {
     }
   }
 
-  // =========================
   // GET DETAIL PENERIMAAN
-  // =========================
   static Future<Map<String, dynamic>> getDetailPenerimaan(String id) async {
     final response = await http
         .get(
@@ -62,18 +58,20 @@ class PenerimaanService {
     }
   }
 
-  // =========================
   // ADD PENERIMAAN (HEADER ONLY)
-  // =========================
   static Future<String> addPenerimaan({
     required String idPembelian,
     required int totalHarga,
+    String? tanggalPenerimaan
   }) async {
     final uri = Uri.parse("$baseUrl/penerimaan");
-    final body = {
+    final body = <String, dynamic>{
       "id_pembelian": idPembelian,
       "total_harga": totalHarga,
-    };
+  };
+  if (tanggalPenerimaan != null && tanggalPenerimaan.isNotEmpty) {
+    body["tanggal_penerimaan"] = tanggalPenerimaan;
+  }
 
     print("📡 POST penerimaan → $uri");
     print("📡 Request: ${jsonEncode(body)}");
@@ -99,9 +97,7 @@ class PenerimaanService {
     }
   }
 
-  // =========================
   // ADD DETAIL PENERIMAAN
-  // =========================
   static Future<Map<String, dynamic>> addDetailPenerimaan(
     List<Map<String, dynamic>> details,
   ) async {
@@ -126,9 +122,7 @@ class PenerimaanService {
     return resBody['data'] ?? {};
   }
 
-  // =========================
   // EDIT PENERIMAAN
-  // =========================
   static Future<void> editPenerimaan({
     required String idPenerimaan,
     required String idPembelian,
@@ -155,9 +149,7 @@ class PenerimaanService {
     }
   }
 
-  // =========================
   // DELETE PENERIMAAN
-  // =========================
   static Future<void> deletePenerimaan(String id) async {
     final uri = Uri.parse("$baseUrl/penerimaan/$id");
     print("📡 DELETE penerimaan → $uri");
@@ -174,9 +166,7 @@ class PenerimaanService {
     }
   }
 
-  // =========================
   // DELETE DETAIL
-  // =========================
   static Future<void> deleteDetailPenerimaan(int idDetail) async {
     final response = await http
         .delete(
@@ -190,9 +180,7 @@ class PenerimaanService {
     }
   }
 
-  // =========================
   // GET NEXT BATCH CODE (PREVIEW)
-  // =========================
   static Future<String> getNextBatchCode() async {
     final response = await http
         .get(

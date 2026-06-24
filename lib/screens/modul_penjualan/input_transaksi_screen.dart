@@ -14,7 +14,7 @@ class InputTransaksiScreen extends StatefulWidget {
 }
 
 class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
-  String _tanggalAuto = '';
+  DateTime _tanggalPenjualan = DateTime.now();
   String _previewNomerPenjualan = '';
   int _selectedCustomerId = 0;
   String _selectedCustomerName = '';
@@ -31,8 +31,6 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _tanggalAuto = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
     _loadInitialData();
     _tambahBarisBarang();
   }
@@ -155,7 +153,11 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                     // --- HEADER: Tanggal, Customer ---
                     Row(
                       children: [
-                        Expanded(child: _buildReadOnlyField(label: 'Tanggal Transaksi', value: _tanggalAuto.isEmpty ? '-' : _tanggalAuto)),
+                        Expanded(child: _buildDatePickerField(     // ← tambah Expanded
+                          label: 'Tanggal Transaksi',
+                          selectedDate: _tanggalPenjualan,
+                          onChanged: (date) => setState(() => _tanggalPenjualan = date),
+                        )),
                         const SizedBox(width: 20),
                         Expanded(child: _buildCustomerDropdown()),
                       ],
@@ -294,9 +296,11 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                                     // }
 
                                     //generate header penjualan dulu
+                                    final formattedTgl = '${_tanggalPenjualan.year}-${_tanggalPenjualan.month.toString().padLeft(2, '0')}-${_tanggalPenjualan.day.toString().padLeft(2, '0')}';
                                     final nomerPenjualan = await PenjualanService.addPenjualan(
                                       idCustomer: _selectedCustomerId,
                                       potonganHarga: nilaiDiskon,
+                                      tanggalPenjualan: formattedTgl,
                                     );
                                     if (mounted) setState(() => _previewNomerPenjualan = nomerPenjualan);
 
@@ -336,7 +340,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
                                     Navigator.pushReplacementNamed(context, AppRoute.detailTransaksi,
                                       arguments: {
                                         'nomer_penjualan': _previewNomerPenjualan,
-                                        'tanggal_penjualan': DateTime.now().toIso8601String(),
+                                        'tanggal_penjualan': _tanggalPenjualan.toIso8601String(),
                                         'total_harga': _hitungTotalAkhir(),
                                         'potongan_harga': nilaiDiskon,
                                         'id_kustomer': _selectedCustomerId,
@@ -565,6 +569,52 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
       ],
     );
   }
+
+  Widget _buildDatePickerField({
+  required String label,
+  required DateTime selectedDate,
+  required ValueChanged<DateTime> onChanged,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 15),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2030),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Future<void> _fetchCustomerHarga(int index, String kodeProduk) async {
     if (index >= _listBarang.length) return;

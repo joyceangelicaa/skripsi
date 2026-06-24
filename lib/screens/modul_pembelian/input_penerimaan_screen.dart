@@ -19,7 +19,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
   String? _idPembelianArgs;
   bool _isLoading = true;
 
-  String tanggal = '';
+  DateTime _tanggalPenerimaan = DateTime.now();
   String idPembelian = '';
   String supplier = '';
   String totalHarga = '0';
@@ -99,7 +99,10 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
 
       setState(() {
         idPembelian = pembelian['id_pembelian'].toString();
-        tanggal = PembelianService.formatDate(pembelian['tanggal_pembelian']);
+        final rawTgl = pembelian['tanggal_pembelian'];
+        if (rawTgl != null) {
+          _tanggalPenerimaan = DateTime.tryParse(rawTgl) ?? DateTime.now();
+        }
         supplier = namaSupplier;
         totalHarga = pembelian['total_harga']?.toString() ?? '0';
         items = List<Map<String, dynamic>>.from(itemList);
@@ -212,9 +215,11 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
       }
 
       // 1. POST header dengan total yang benar
+      final formattedTgl = '${_tanggalPenerimaan.year}-${_tanggalPenerimaan.month.toString().padLeft(2, '0')}-${_tanggalPenerimaan.day.toString().padLeft(2, '0')}';
       final idPenerimaan = await PenerimaanService.addPenerimaan(
         idPembelian: _idPembelianArgs!,
         totalHarga: totalTerima,
+        tanggalPenerimaan: formattedTgl,
       );
 
       // 2. POST details
@@ -255,7 +260,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
     }
   }
 
-  // ================== UI (TIDAK DIUBAH) ==================
+  // ================== UI ==================
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -288,9 +293,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // ====== (SEMUA UI DI BAWAH INI SAMA PERSIS PUNYAMU) ======
 
-                  // --- SECTION 1 ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24.0),
@@ -309,7 +312,11 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
                           children: [
                             Expanded(flex: 2, child: _buildReadOnlyField(label: 'ID Pembelian (PO)', value: idPembelian)),
                             const SizedBox(width: 20),
-                            Expanded(flex: 1, child: _buildReadOnlyField(label: 'Tanggal Terima', value: tanggal)),
+                            Expanded(flex: 1, child: _buildDatePickerField(
+                              label: 'Tanggal Terima',
+                              selectedDate: _tanggalPenerimaan,
+                              onChanged: (date) => setState(() => _tanggalPenerimaan = date),
+                            )),
                             const SizedBox(width: 20),
                             Expanded(flex: 1, child: _buildReadOnlyField(label: 'Supplier', value: supplier)),
                           ],
@@ -320,7 +327,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
 
                   const SizedBox(height: 25),
 
-                  // --- MERGED SECTION: DATA PENERIMAAN BARANG ---
+                  // --- DATA PENERIMAAN BARANG ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24.0),
@@ -499,6 +506,52 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
       ),
     );
   }
+
+  Widget _buildDatePickerField({
+  required String label,
+  required DateTime selectedDate,
+  required ValueChanged<DateTime> onChanged,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 15),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2030),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   String _formatRupiah(num value) {
     final str = value.toStringAsFixed(0).split('').reversed.toList();
