@@ -151,7 +151,7 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
                         headerData?['created_at']?.toString().substring(0, 10) ?? '-',
                       ),
                       _buildHeaderInfo(
-                        'Petugas / PIC',
+                        'Petugas',
                         headerData?['user']?['nama_user'] ?? '-',
                       ),
                       _buildHeaderInfo(

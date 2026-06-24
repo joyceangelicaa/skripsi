@@ -12,9 +12,7 @@ class KartuStokService {
     };
   }
 
-  // =========================
   // GET ALL KARTU STOK
-  // =========================
   static Future<List<dynamic>> getAllKartuStok({
     int limit = 10,
     int offset = 0,
@@ -37,9 +35,7 @@ class KartuStokService {
     }
   }
 
-  // =========================
   // GET KARTU STOK BY PRODUK
-  // =========================
   static Future<List<dynamic>> getKartuStokByProduk({
     required String kodeProduk,
     String? startDate,

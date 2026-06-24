@@ -81,20 +81,26 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
         final kode = item['kode_produk']?.toString() ?? '';
 
         String namaBarang = kode;
-        String rop = '-';
-        String stok = '-';
+        int rekomendasi = 0;
         try {
           final p = _products.firstWhere((p) => p['kode_produk'] == kode);
           namaBarang = p['nama_produk'] ?? kode;
-          rop = '${p['reorder_point'] ?? '-'}';
-          stok = '${p['stok_produk'] ?? '-'}';
+
+          final rop = (p['reorder_point'] ?? 0) as int;
+          final stok = (p['stok_produk'] ?? 0) as int;
+          final safety = (p['safety_stock'] ?? 0) as int;
+          if (stok > rop) {
+            rekomendasi = 0;
+          } else {
+            rekomendasi = rop - stok + safety;
+            if (rekomendasi < 0) rekomendasi = 0;
+          }
         } catch (_) {}
 
         return {
           'nama_barang': namaBarang,
-          'rop': rop,
-          'stok': stok,
           'harga': item['harga_beli'] ?? 0,
+          'rekomendasi': rekomendasi,
           'qty': item['quantity'] ?? 0,
         };
       }).toList();
@@ -204,13 +210,11 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
                     Row(
                       children: [
                         Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
-                        Expanded(flex: 1, child: Text('ROP', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
-                        Expanded(flex: 1, child: Text('Stok', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
-                        Expanded(flex: 1, child: Text('Harga', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                        const SizedBox(width: 15),
+                        const SizedBox(width: 12),
+                        Expanded(flex: 1, child: Text('Harga Beli', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                        const SizedBox(width: 12),
+                        Expanded(flex: 1, child: Text('Rekomendasi Pembelian', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                        const SizedBox(width: 12),
                         Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
                       ],
                     ),
@@ -273,29 +277,7 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: TextEditingController(text: item['rop'].toString()),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: TextEditingController(text: item['stok'].toString()),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
           Expanded(
             flex: 1,
             child: TextField(
@@ -306,7 +288,18 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 1,
+            child: TextField(
+              controller: TextEditingController(text: '${item['rekomendasi'] ?? 0}'),
+              readOnly: true,
+              textAlign: TextAlign.center,
+              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             flex: 1,
             child: TextField(

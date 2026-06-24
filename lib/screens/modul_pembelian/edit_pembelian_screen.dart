@@ -41,6 +41,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
   final List<Map<String, dynamic>> _listBarang = [];
 
   bool _isLoading = true;
+  int _autocompleteRefreshKey = 0;
 
   @override
   void didChangeDependencies() {
@@ -99,14 +100,21 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
         String qty = item['quantity'].toString();
         String harga = item['harga_beli']?.toString() ?? '0';
 
-        String rop = '-';
-        String stok = '-';
         String barang = '-';
+        int rekomendasi = 0;
         try {
           final prodMatch = _products.firstWhere((p) => p['kode_produk'] == kodeProduk);
-          rop = '${prodMatch['reorder_point'] ?? '-'}';
-          stok = '${prodMatch['stok_produk'] ?? '-'}';
           barang = '${prodMatch['nama_produk'] ?? '-'}';
+
+          final rop = (prodMatch['reorder_point'] ?? 0) as int;
+          final stok = (prodMatch['stok_produk'] ?? 0) as int;
+          final safety = (prodMatch['safety_stock'] ?? 0) as int;
+          if (stok > rop) {
+            rekomendasi = 0;
+          } else {
+            rekomendasi = rop - stok + safety;
+            if (rekomendasi < 0) rekomendasi = 0;
+          }
         } catch (e) {}
 
         _listBarang.add({
@@ -114,8 +122,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
           'barang': barang,
           'qty_controller': TextEditingController(text: qty),
           'harga_controller': TextEditingController(text: harga),
-          'rop': rop,
-          'stok': stok,
+          'rekomendasi': rekomendasi,
         });
       }
 
@@ -141,8 +148,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
         'barang': '',
         'qty_controller': TextEditingController(),
         'harga_controller': TextEditingController(),
-        'rop': '-',
-        'stok': '-',
+        'rekomendasi': 0,
       });
     });
   }
@@ -324,15 +330,13 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
                         Row(
                           children: [
                             Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('ROP', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('Stok', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
-                            Expanded(flex: 1, child: Text('Hrg', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 15),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 1, child: Text('Harga Beli', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 1, child: Text('Rekomendasi Pembelian', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                            const SizedBox(width: 12),
                             Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
-                            const SizedBox(width: 58),
+                            const SizedBox(width: 10),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -368,7 +372,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
                             ),
                             const SizedBox(width: 15),
                             ElevatedButton(
-                              onPressed: _updatePembelian, // ⬅️ TERHUBUNG KE API
+                              onPressed: _updatePembelian,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.orange, 
                                 foregroundColor: Colors.white, 
@@ -442,55 +446,56 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
       child: Row(
         children: [
           Expanded(flex: 3, child: _buildDropdownBarang(item, index)),
-          const SizedBox(width: 15),
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: TextEditingController(text: item['rop']),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            flex: 1,
-            child: TextField(
-              controller: TextEditingController(text: item['stok']),
-              readOnly: true,
-              textAlign: TextAlign.center,
-              decoration: _inputStyle(readOnly: true).copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12)),
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
           Expanded(
             flex: 1,
             child: TextField(
               controller: item['harga_controller'],
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              decoration: _inputStyle().copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), hintText: '0', prefixText: 'Rp '),
+              decoration: _inputStyle().copyWith(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                hintText: '0',
+                prefixText: 'Rp ',
+              ),
               onChanged: (_) => setState(() {}),
             ),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 1,
+            child: TextField(
+              controller: TextEditingController(text: '${item['rekomendasi'] ?? 0}'),
+              readOnly: true,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              decoration: _inputStyle(readOnly: true).copyWith(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             flex: 1,
             child: TextField(
               controller: item['qty_controller'],
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              decoration: _inputStyle().copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), hintText: '0'),
+              decoration: _inputStyle().copyWith(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                hintText: '0',
+              ),
               onChanged: (_) => setState(() {}),
             ),
           ),
           const SizedBox(width: 10),
           SizedBox(
             width: 48,
-            child: IconButton(onPressed: () => _hapusBarang(index), icon: const Icon(Icons.delete, color: Colors.red)),
-          )
+            child: IconButton(
+              onPressed: () => _hapusBarang(index),
+              icon: const Icon(Icons.delete, color: Colors.red),
+            ),
+          ),
         ],
       ),
     );
@@ -498,6 +503,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
 
   Widget _buildDropdownBarang(Map<String, dynamic> item, int index) {
     return Autocomplete<String>(
+      key: ValueKey('ac_${index}_$_autocompleteRefreshKey'),
       optionsBuilder: (textEditingValue) {
         if (textEditingValue.text.isEmpty) {
           return _products.map((p) => p['nama_produk']?.toString() ?? '')
@@ -507,17 +513,112 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
         return _products.map((p) => p['nama_produk']?.toString() ?? '')
             .where((n) => n.isNotEmpty && n.toLowerCase().contains(query));
       },
-      onSelected: (selection) {
+      onSelected: (selection) async {
         final match = _products.firstWhere((p) => p['nama_produk'] == selection);
+        final rop = (match['reorder_point'] ?? 0) as int;
+        final stok = (match['stok_produk'] ?? 0) as int;
+        final safety = (match['safety_stock'] ?? 0) as int;
+        int rekomendasi;
+        if (stok > rop) {
+          rekomendasi = 0;
+        } else {
+          rekomendasi = rop - stok + safety;
+          if (rekomendasi < 0) rekomendasi = 0;
+        }
+
+        if (stok > rop) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                width: 400,
+                padding: const EdgeInsets.all(30.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.inventory_2_outlined,
+                        color: Colors.amber, size: 80),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Stok Masih Banyak',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '"$selection"\n\n'
+                      'Stok saat ini: $stok unit\n'
+                      'Batas ROP: $rop unit\n\n'
+                      'Stok masih di atas ROP.\n'
+                      'Yakin akan membeli barang ini?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 30),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.grey.shade700,
+                              side: BorderSide(color: Colors.grey.shade300),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Batal',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E293B),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text('Ya, Lanjutkan',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          if (confirmed != true) {
+            setState(() => _autocompleteRefreshKey++);
+            return;
+          }
+        }
+
         setState(() {
           item['kode_produk'] = match['kode_produk'];
           item['barang'] = selection;
-          item['stok'] = '${match['stok_produk'] ?? '-'}';
-          item['rop'] = '${match['reorder_point'] ?? '-'}';
+          item['rekomendasi'] = rekomendasi;
         });
       },
       fieldViewBuilder: (context, textEditingController, focusNode, onSubmitted) {
-        if(textEditingController.text.isEmpty && (item['barang']??'').isNotEmpty) {
+        if (textEditingController.text.isEmpty && (item['barang'] ?? '').isNotEmpty) {
           textEditingController.text = item['barang'];
         }
         return TextField(
@@ -560,8 +661,14 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
       filled: true,
       fillColor: readOnly ? Colors.grey.shade200 : Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF1E293B))),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF1E293B)),
+      ),
     );
   }
 }

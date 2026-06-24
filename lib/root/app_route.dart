@@ -205,7 +205,7 @@ class AppRoute {
       case editTransaksi:
         page = _withSidebar(const EditTransaksiScreen());
         break;     
-      //laporan
+      //laporan 
       // case laporanPenjualan:
       //   page = _withSidebar(const LaporanPenjualanScreen());
       //   break;

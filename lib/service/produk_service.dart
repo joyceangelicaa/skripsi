@@ -84,7 +84,7 @@ class ProdukService {
   }
 
   // =========================
-  // GET SUPPLIER BY PRODUK
+  // GET Last produk by supplier
   // =========================
   static Future<List<dynamic>> getSupplierByProduk({
     required String kodeProduk,
