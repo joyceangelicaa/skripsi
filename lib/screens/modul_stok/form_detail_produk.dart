@@ -14,6 +14,9 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
   Map<String, dynamic>? produk;
   bool isLoading = true;
 
+  List<dynamic> suppliers = [];
+  bool isLoadingSuppliers = true;
+
   String _formatRupiah(num value) {
     final str = value.toStringAsFixed(0).split('').reversed.toList();
     final buffer = StringBuffer();
@@ -28,6 +31,7 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
   void initState() {
     super.initState();
     fetchDetail();
+    fetchSuppliers();
   }
 
   void fetchDetail() async {
@@ -39,6 +43,20 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
       });
     } catch (e) {
       setState(() => isLoading = false);
+    }
+  }
+
+  void fetchSuppliers() async {
+    try {
+      final data = await ProdukService.getSupplierByProduk(
+        kodeProduk: widget.kode,
+      );
+      setState(() {
+        suppliers = data;
+        isLoadingSuppliers = false;
+      });
+    } catch (e) {
+      setState(() => isLoadingSuppliers = false);
     }
   }
 
@@ -76,10 +94,6 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
       status = "Menipis";
     }
 
-    Color statusColor = Colors.green;
-    if (status == 'Menipis') statusColor = Colors.orange;
-    if (status == 'Habis') statusColor = Colors.red;
-
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: const Row(
@@ -97,6 +111,7 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildReadOnlyField(label: 'Kode Produk', value: p['kode_produk']?.toString() ?? '-'),
               _buildReadOnlyField(label: 'Nama Produk', value: p['nama_produk'] ?? '-'),
@@ -106,25 +121,14 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
                   Expanded(child: _buildReadOnlyField(label: 'Stok', value: stok.toString())),
                   const SizedBox(width: 20),
                   Expanded(child: _buildReadOnlyField(label: 'Safety Stok', value: safety.toString())),
+                  const SizedBox(width: 20),
+                  Expanded(child: _buildReadOnlyField(label: 'Status', value: status)),
                 ],
               ),
-              _buildReadOnlyField(
-                label: 'Status',
-                valueWidget: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+              if (!isLoadingSuppliers) ...[
+                const SizedBox(height: 10),
+                _buildSupplierSection(),
+              ],
             ],
           ),
         ),
@@ -135,6 +139,46 @@ class _FormDetailProdukState extends State<FormDetailProduk> {
           child: const Text('Tutup', style: TextStyle(color: Colors.grey)),
         ),
       ],
+    );
+  }
+
+  Widget _buildSupplierSection() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('3 Supplier Terakhir',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          if (suppliers.isEmpty)
+            const Text('Belum ada riwayat supplier',
+                style: TextStyle(fontSize: 14, color: Colors.grey))
+          else
+            Row(
+              children: [
+                for (int i = 0; i < suppliers.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 20),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 15),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        suppliers[i]['nama_supplier']?.toString() ?? '-',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+        ],
+      ),
     );
   }
 

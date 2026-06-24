@@ -83,6 +83,29 @@ class ProdukService {
     }
   }
 
+  // =========================
+  // GET SUPPLIER BY PRODUK
+  // =========================
+  static Future<List<dynamic>> getSupplierByProduk({
+    required String kodeProduk,
+  }) async {
+    final uri = Uri.parse("$baseUrl/produk/$kodeProduk/supplier");
+    print("📡 GET supplier by produk → $uri");
+
+    final response = await http
+        .get(uri, headers: _authHeaders())
+        .timeout(const Duration(seconds: 10));
+
+    print("📡 Status: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      return result['data'] as List<dynamic>;
+    } else {
+      throw Exception('Gagal ambil supplier by produk (${response.statusCode})');
+    }
+  }
+
   static Future<Map<String, dynamic>> getDetailProduk(String kode) async {
     final response = await http
         .get(
