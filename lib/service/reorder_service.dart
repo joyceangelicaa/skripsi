@@ -16,7 +16,7 @@ class ReorderService {
     int limit = 10, int offset = 0,
   }) async {
     final response = await http.get(
-      Uri.parse("$baseUrl/reorder-point/rekomendasi?limit=$limit&offset=$offset"),
+      Uri.parse("$baseUrl/reorder-point/rekomendasi-rolling?limit=$limit&offset=$offset"),
       headers: _authHeaders(),
     ).timeout(const Duration(seconds: 10));
 
@@ -32,7 +32,7 @@ class ReorderService {
 
   static Future<void> hitungSemua() async {
     final response = await http.post(
-      Uri.parse("$baseUrl/reorder-point/hitung-semua"),
+      Uri.parse("$baseUrl/reorder-point/hitung-semua-rolling"),
       headers: _authHeaders(),
     ).timeout(const Duration(seconds: 10));
 

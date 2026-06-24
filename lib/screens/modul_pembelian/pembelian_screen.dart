@@ -6,6 +6,7 @@ import '../../global_widget/table.dart';
 import '../../root/app_route.dart';
 import '../../service/pembelian_service.dart';
 import '../../service/supplier_service.dart';
+import '../../service/laporan_pembelian_pdf_service.dart';
 
 class PembelianScreen extends StatefulWidget {
   const PembelianScreen({super.key});
@@ -188,6 +189,36 @@ class _PembelianScreenState extends State<PembelianScreen> {
     });
   }
 
+  //cetak pdf
+  Future<void> _cetakPdf() async {
+  try {
+    if (_filteredList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada data untuk dicetak')),
+      );
+      return;
+    }
+
+    final pdfBytes = await LaporanPembelianPdfService.generateLaporanPembelianPdf(
+      items: _filteredList,
+      startDate: _startDate,
+      endDate: _endDate,
+      status: _selectedStatus,
+    );
+
+    final filename = _startDate != null && _endDate != null
+        ? 'data_pembelian_${LaporanPembelianPdfService.formatDate(_startDate)}_${LaporanPembelianPdfService.formatDate(_endDate)}.pdf'
+        : 'data_pembelian.pdf';
+
+    LaporanPembelianPdfService.downloadPdf(pdfBytes, filename);
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Gagal cetak PDF: $e'), backgroundColor: Colors.red),
+    );
+  }
+}
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -332,6 +363,18 @@ class _PembelianScreenState extends State<PembelianScreen> {
                     _buildStatusDropdown(),
                     const SizedBox(width: 8),
                     Expanded(child: _buildSearchField()),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _cetakPdf,
+                      icon: const Icon(Icons.print, size: 20),
+                      label: const Text('Cetak PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E293B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
                   ],
                 );
               }
@@ -361,7 +404,23 @@ class _PembelianScreenState extends State<PembelianScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _buildSearchField(),
+                  Row(
+                    children: [
+                      Expanded(child: _buildSearchField()),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _cetakPdf,
+                        icon: const Icon(Icons.print, size: 18),
+                        label: const Text('Cetak'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E293B),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               );
             },

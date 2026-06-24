@@ -182,9 +182,9 @@ class AppRoute {
         page = _withSidebar(const DetailPenerimaanScreen());   
         break;     
       //laporan
-      case laporanPembelian:
-        page = _withSidebar(const LaporanPembelianScreen());
-        break;  
+      // case laporanPembelian:
+      //   page = _withSidebar(const LaporanPembelianScreen());
+      //   break;  
 
       //======== modul pemjualan ========
       //customer
@@ -206,9 +206,9 @@ class AppRoute {
         page = _withSidebar(const EditTransaksiScreen());
         break;     
       //laporan
-      case laporanPenjualan:
-        page = _withSidebar(const LaporanPenjualanScreen());
-        break;
+      // case laporanPenjualan:
+      //   page = _withSidebar(const LaporanPenjualanScreen());
+      //   break;
       
       default:
         page = _withSidebar(

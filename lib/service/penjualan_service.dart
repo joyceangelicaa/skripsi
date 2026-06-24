@@ -34,8 +34,16 @@ class PenjualanService {
   static Future<List<Map<String, dynamic>>> getAllPenjualan({
     int limit = 10,
     int offset = 0,
+    String? startDate,
+    String? endDate,
   }) async {
     String url = "$baseUrl?limit=$limit&offset=$offset";
+    if (startDate != null && startDate.isNotEmpty) {
+      url += "&start_date=$startDate";
+    }
+    if (endDate != null && endDate.isNotEmpty) {
+      url += "&end_date=$endDate";
+    } 
 
     final res = await http.get(
       Uri.parse(url),
