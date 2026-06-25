@@ -37,9 +37,8 @@ class _PembelianScreenState extends State<PembelianScreen> {
     _fetchPembelian();
   }
 
-  // =========================
+  
   // GET DATA
-  // =========================
   Future<void> _fetchPembelian() async {
     try {
       String? startStr;
@@ -89,9 +88,7 @@ class _PembelianScreenState extends State<PembelianScreen> {
     }
   }
 
-  // =========================
   // SELESAI PEMBELIAN
-  // =========================
   Future<void> _selesaikanPO(String idPembelian) async {
     try {
       await PembelianService.selesaiPembelian(idPembelian);
@@ -114,9 +111,7 @@ class _PembelianScreenState extends State<PembelianScreen> {
     }
   }
 
-  // =========================
   // DELETE PEMBELIAN
-  // =========================
   Future<void> _deletePO(String idPembelian) async {
     setState(() => _deletingId = idPembelian);
 
@@ -428,9 +423,7 @@ class _PembelianScreenState extends State<PembelianScreen> {
 
           const SizedBox(height: 20),
 
-          // =========================
           // TABLE
-          // =========================
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -462,9 +455,7 @@ class _PembelianScreenState extends State<PembelianScreen> {
     );
   }
 
-  // =========================
   // BUILD ROW
-  // =========================
   DataRow _buildDataRow(
     BuildContext context,
     String no,

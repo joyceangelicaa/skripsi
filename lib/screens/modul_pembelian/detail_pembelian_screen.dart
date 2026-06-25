@@ -52,13 +52,10 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
         });
       }
     } catch (e) {
-      // Tetap lanjut — detail akan tampil dengan ID/kode apa adanya
     }
   }
 
-  // =========================
-  // GET DETAIL API (LOGIKA TIDAK DIUBAH)
-  // =========================
+  // GET DETAIL API 
   Future<void> _fetchDetail() async {
     try {
       final data = await PembelianService.getDetailPembelian(_idPembelian!);
@@ -259,9 +256,7 @@ class _DetailPembelianScreenState extends State<DetailPembelianScreen> {
     return 'Rp ${buffer.toString().split('').reversed.join()}';
   }
 
-  // =========================
   // HELPER UI
-  // =========================
 
   Widget _buildItemRow(Map<String, dynamic> item) {
     return Padding(

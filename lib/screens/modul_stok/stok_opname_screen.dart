@@ -122,9 +122,7 @@ class _StokOpnameScreenState extends State<StokOpnameScreen> {
           const GlobalAppBar(title: 'Stok Opname'),
           const SizedBox(height: 20),
 
-          // =========================
-          // ACTION BAR (TIDAK DIUBAH)
-          // =========================
+          // ACTION BAR
           Row(
             children: [
               ElevatedButton.icon(
@@ -171,9 +169,7 @@ class _StokOpnameScreenState extends State<StokOpnameScreen> {
 
           const SizedBox(height: 30),
 
-          // =========================
-          // TABLE DATA (DINAMIS)
-          // =========================
+          // TABLE DATA 
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -216,9 +212,7 @@ class _StokOpnameScreenState extends State<StokOpnameScreen> {
     );
   }
 
-  // =========================
-  // HELPER ROW (TIDAK DIUBAH UI)
-  // =========================
+  // HELPER ROW 
   DataRow _buildDataRow(
       BuildContext context, String no, String idSO, String tanggal, String user) {
     return DataRow(

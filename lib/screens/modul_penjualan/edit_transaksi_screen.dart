@@ -193,9 +193,7 @@ class _EditTransaksiScreenState extends State<EditTransaksiScreen> {
     return sum;
   }
 
-  // =========================
   // SIMPAN PERUBAHAN
-  // =========================
   Future<void> _simpan() async {
     if (_selectedCustomerId == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -444,9 +442,7 @@ class _EditTransaksiScreenState extends State<EditTransaksiScreen> {
     );
   }
 
-  // =========================
   // HELPER WIDGETS
-  // =========================
 
   Widget _buildReadOnlyField({required String label, required String value}) {
     return Padding(

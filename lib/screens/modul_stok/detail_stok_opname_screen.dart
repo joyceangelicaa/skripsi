@@ -31,9 +31,7 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
     loadData();
   }
 
-  // =========================
   // LOAD DATA HEADER + DETAIL
-  // =========================
   Future<void> loadData() async {
     try {
       final header = await StokOpnameService.getStokOpnameById(idStokOpname!);
@@ -109,9 +107,7 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
                 const GlobalAppBar(title: 'Detail Stok Opname'),
                 const SizedBox(height: 20),
 
-                // =========================
                 // TOMBOL KEMBALI
-                // =========================
                 Align(
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
@@ -133,9 +129,7 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
 
                 const SizedBox(height: 20),
 
-                // =========================
                 // HEADER (DINAMIS)
-                // =========================
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -164,9 +158,7 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
 
                 const SizedBox(height: 30),
 
-                // =========================
                 // TABLE DETAIL (DINAMIS)
-                // =========================
                 Expanded(
                   child: GlobalDataTable(
                     sortColumnIndex: _sortColumnIndex,
@@ -237,9 +229,7 @@ class _DetailStokOpnameScreenState extends State<DetailStokOpnameScreen> {
     );
   }
 
-  // =========================
-  // HEADER HELPER (TIDAK DIUBAH)
-  // =========================
+  // HEADER HELPER 
   Widget _buildHeaderInfo(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

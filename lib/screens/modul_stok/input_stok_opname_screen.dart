@@ -48,9 +48,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
     loadProduk();
   }
 
-  // =========================
   // LOAD PRODUK DARI API
-  // =========================
   Future<void> loadProduk() async {
     try {
       final data = await ProdukService.getAllProduk(limit: 999, offset: 0);
@@ -118,9 +116,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
     });
   }
 
-  // =========================
   // SIMPAN DATA KE BACKEND
-  // =========================
   Future<void> simpanData() async {
     try {
       List<Map<String, dynamic>> payload = [];
@@ -214,9 +210,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
           const GlobalAppBar(title: 'Input Stok Opname'),
           const SizedBox(height: 15),
 
-          // =========================
           // TOMBOL KEMBALI
-          // =========================
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
@@ -237,9 +231,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
           ),
           const SizedBox(height: 15),
 
-          // =========================
-          // HEADER (TIDAK DIUBAH)
-          // =========================
+          // HEADER 
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -298,9 +290,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
 
           const SizedBox(height: 30),
 
-          // =========================
-          // TABLE (UI TETAP SAMA)
-          // =========================
+          // TABLE 
           Expanded(
             child: items.isEmpty
                 ? const Center(child: CircularProgressIndicator())
@@ -362,9 +352,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
     );
   }
 
-  // =========================
   // FORMAT TANGGAL
-  // =========================
   String _formatTanggal(String? iso) {
     if (iso == null) return '-';
     try {
@@ -379,9 +367,7 @@ class _InputStokOpnameScreenState extends State<InputStokOpnameScreen> {
     }
   }
 
-  // =========================
   // HEADER HELPER
-  // =========================
   Widget _buildHeaderInfo(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

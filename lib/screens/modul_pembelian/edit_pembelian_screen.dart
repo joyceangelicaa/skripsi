@@ -37,7 +37,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
   // State untuk Produk
   List<dynamic> _products = [];
 
-  // State untuk Daftar Barang Dinamis
+  // State untuk Daftar Barang 
   final List<Map<String, dynamic>> _listBarang = [];
 
   bool _isLoading = true;
@@ -76,9 +76,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
     }
   }
 
-  // =========================
   // GET DETAIL DARI API
-  // =========================
   Future<void> _fetchDetail() async {
     try {
       final data = await PembelianService.getDetailPembelian(_idPembelian!);
@@ -161,9 +159,7 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
     });
   }
 
-  // =========================
   // UPDATE KE API
-  // =========================
   Future<void> _updatePembelian() async {
     try {
       if (_selectedSupplierId == null) {
@@ -191,13 +187,13 @@ class _EditPembelianScreenState extends State<EditPembelianScreen> {
         });
       }
 
-      // STEP 1: Update header
+      // Update header
       await PembelianService.editPembelian(
         idPembelian: _idPembelian!,
         idSupplier: idSupplier,
       );
 
-      // STEP 2: Update details
+      // Update details
       await PembelianService.editDetailPembelian(
         idPembelian: _idPembelian!,
         details: details,

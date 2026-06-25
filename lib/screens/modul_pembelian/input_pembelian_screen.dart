@@ -107,9 +107,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
     });
   }
 
-  // // =========================
   // // GENERATE ID + BATAL
-  // // =========================
   // Future<void> _generateIdPembelian(int idSupplier) async {
   //   if (_generatedIdPembelian != null) return;
   //   try {
@@ -133,9 +131,7 @@ class _InputPembelianState extends State<InputPembelianScreen> {
     }
   }
 
-  // =========================
   // FUNGSI SIMPAN KE API
-  // =========================
   Future<void> _simpanPembelian() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
@@ -375,9 +371,8 @@ class _InputPembelianState extends State<InputPembelianScreen> {
     );
   }
 
-  // ==========================================
-  // --- WIDGET HELPER UI LAMA (TIDAK DIUBAH) ---
-  // ==========================================
+  // --- WIDGET HELPER UI  ---
+
 
   Widget _buildSupplierDropdown() {
     return Padding(

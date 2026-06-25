@@ -18,19 +18,19 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF1F5F9), // Background abu-abu terang
+      color: const Color(0xFFF1F5F9), 
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 1. JUDUL HALAMAN ---
+          // --- JUDUL HALAMAN ---
           const GlobalAppBar(
             title: 'Edit Stok Opname',
           ),
           
           const SizedBox(height: 20),
 
-          // --- 2. TOMBOL KEMBALI ---
+          // ---TOMBOL KEMBALI ---
           OutlinedButton.icon(
             onPressed: () {
               Navigator.pushReplacementNamed(context, AppRoute.stokOpname);
@@ -49,7 +49,7 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
 
           const SizedBox(height: 20),
 
-          // --- 3. HEADER INFORMASI (Data Lama) ---
+          // --- HEADER INFORMASI  ---
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -73,7 +73,7 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
                 Divider(color: Colors.grey.shade300, thickness: 1),
                 const SizedBox(height: 20),
 
-                // --- 4. SEARCH & TOMBOL SIMPAN PERUBAHAN ---
+                // --- SEARCH & TOMBOL SIMPAN PERUBAHAN ---
                 Row(
                   children: [
                     Expanded(
@@ -117,7 +117,7 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
                       icon: const Icon(Icons.check_circle_outline, size: 20),
                       label: const Text('Simpan Perubahan'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange, // Warna orange identik dengan edit
+                        backgroundColor: Colors.orange, 
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
                         shape: RoundedRectangleBorder(
@@ -133,7 +133,7 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
 
           const SizedBox(height: 30),
 
-          // --- 5. TABEL EDIT DATA ---
+          // --- TABEL EDIT DATA ---
           Expanded(
             child: GlobalDataTable(
               sortColumnIndex: _sortColumnIndex,
@@ -187,14 +187,14 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
           SizedBox(
             width: 120,
             child: TextField(
-              controller: TextEditingController(text: stokFisik), // Mengisi data lama ke input
+              controller: TextEditingController(text: stokFisik),
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                 filled: true,
-                fillColor: Colors.orange.withOpacity(0.05), // Highlight tipis warna orange
+                fillColor: Colors.orange.withOpacity(0.05), 
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.orange.shade200),
@@ -211,7 +211,7 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
           SizedBox(
             width: 250,
             child: TextField(
-              controller: TextEditingController(text: ket), // Mengisi data lama ke input
+              controller: TextEditingController(text: ket), 
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
@@ -244,8 +244,5 @@ class _EditStokOpnameScreenState extends State<EditStokOpnameScreen> {
 
   void _sortData() {
     if (_sortColumnIndex == null) return;
-    // Data is hardcoded in rows list above, so actual sorting requires
-    // storing row data in a list and rebuilding DataRow from sorted data.
-    // For now the sort indicator toggles via sortColumnIndex / sortAscending.
   }
 }

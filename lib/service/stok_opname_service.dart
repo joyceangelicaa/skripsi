@@ -12,9 +12,7 @@ class StokOpnameService {
     };
   }
 
-  // =========================
   // 1. GET ALL STOK OPNAME
-  // =========================
   static Future<List<dynamic>> getAllStokOpname({
     int limit = 0,
     int offset = 0,
@@ -38,9 +36,7 @@ class StokOpnameService {
     }
   }
 
-  // =========================
   // 2. GET HEADER BY ID
-  // =========================
   static Future<Map<String, dynamic>> getStokOpnameById(String id) async {
     final response = await http.get(
       Uri.parse("$baseUrl/stok-opname/$id"),
@@ -55,9 +51,7 @@ class StokOpnameService {
     }
   }
 
-  // =========================
   // 3. CREATE STOK OPNAME (HEADER)
-  // =========================
   static Future<Map<String, dynamic>> addStokOpname(int idUser) async {
     final response = await http.post(
       Uri.parse("$baseUrl/stok-opname"),
@@ -76,9 +70,7 @@ class StokOpnameService {
     }
   }
 
-  // =========================
   // 4. GET DETAIL OPNAME
-  // =========================
   static Future<List<dynamic>> getDetailStokOpname(String id) async {
     final response = await http.get(
       Uri.parse("$baseUrl/stok-opname/$id/detail"),
@@ -93,9 +85,7 @@ class StokOpnameService {
     }
   }
 
-  // =========================
   // 5. ADD DETAIL OPNAME
-  // =========================
   static Future<void> addDetailOpname(
       List<Map<String, dynamic>> items) async {
     final response = await http.post(

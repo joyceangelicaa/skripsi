@@ -141,18 +141,15 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // =========================
+
           // TITLE
-          // =========================
           const GlobalAppBar(
             title: 'Detail Kartu Stok',
           ),
 
           const SizedBox(height: 20),
 
-          // =========================
           // BUTTON BACK
-          // =========================
           OutlinedButton.icon(
             onPressed: () {
               Navigator.pushReplacementNamed(
@@ -176,10 +173,8 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
           ),
 
           const SizedBox(height: 20),
-
-          // =========================
-          // INFO BOX (BALIK NORMAL)
-          // =========================
+        
+          // INFO BOX 
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -198,9 +193,7 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
 
           const SizedBox(height: 30),
 
-          // =========================
           // TABLE
-          // =========================
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -257,9 +250,7 @@ class _DetailKartuStokScreenState extends State<DetailKartuStokScreen> {
     );
   }
 
-  // =========================
   // HELPER INFO
-  // =========================
   Widget _buildInfoItem(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

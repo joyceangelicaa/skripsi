@@ -106,7 +106,7 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF1F5F9), // Background abu-abu terang
+      color: const Color(0xFFF1F5F9), 
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

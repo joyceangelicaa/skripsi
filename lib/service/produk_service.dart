@@ -33,10 +33,7 @@ class ProdukService {
     }
   }
 
-  // =========================
   // GET ALL PRODUK BY SUPPLIER
-  // =========================
-
   static Future<List<dynamic>> getProdukBySupplier({
     required int idSupplier,
     int limit = 10,
@@ -60,9 +57,7 @@ class ProdukService {
     }
   }
 
-  // =========================
   // GET ALL PRODUK BY CUSTOMER
-  // =========================
   static Future<List<dynamic>> getProdukByCustomer({
     required int idCustomer,
     int limit = 10,
@@ -83,9 +78,7 @@ class ProdukService {
     }
   }
 
-  // =========================
   // GET Last produk by supplier
-  // =========================
   static Future<List<dynamic>> getSupplierByProduk({
     required String kodeProduk,
   }) async {

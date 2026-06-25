@@ -63,9 +63,7 @@ class KartuStokService {
     }
   }
 
-  // =========================
   // GET DETAIL KARTU STOK
-  // =========================
   static Future<Map<String, dynamic>> getDetailKartuStok({
     required String idKartuStok,
   }) async {
@@ -87,9 +85,7 @@ class KartuStokService {
     }
   }
 
-  // =========================
   // ADD KARTU STOK
-  // =========================
   static Future<Map<String, dynamic>> addKartuStok({
     required String kodeProduk,
     required int stokMasuk,

@@ -154,7 +154,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
     return null;
   }
 
-  // ================== HANDLE SIMPAN (VALIDASI → KONFIRMASI → POST) ==================
+  // ================== HANDLE SIMPAN UNTUK VALIDASI => KONFIRMASI => POST) ==================
   Future<void> _handleSimpan() async {
     final error = _validate();
     if (error != null) {
@@ -190,7 +190,7 @@ class _InputPenerimaanScreenState extends State<InputPenerimaanScreen> {
     await _submitPenerimaan();
   }
 
-  // ================== SUBMIT (POST SAJA) ==================
+  // ================== SUBMIT ==================
   Future<void> _submitPenerimaan() async {
     try {
       if (_idPembelianArgs == null) {

@@ -88,9 +88,7 @@ class _KartuStokScreenState extends State<KartuStokScreen> {
 
           const SizedBox(height: 20),
 
-          // =========================
-          // SEARCH (TIDAK DIUBAH UI)
-          // =========================
+          // SEARCH 
           Row(
             children: [
               Expanded(
@@ -117,9 +115,7 @@ class _KartuStokScreenState extends State<KartuStokScreen> {
 
           const SizedBox(height: 30),
 
-          // =========================
           // TABLE
-          // =========================
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -157,9 +153,7 @@ class _KartuStokScreenState extends State<KartuStokScreen> {
     );
   }
 
-  // =========================
-  // ROW BUILDER (SAMA KAYA PUNYA KAMU)
-  // =========================
+  // ROW BUILDER 
   DataRow _buildDataRow(
     BuildContext context,
     String no,
