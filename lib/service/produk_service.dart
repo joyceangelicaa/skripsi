@@ -114,6 +114,23 @@ class ProdukService {
     }
   }
 
+  static Future<Map<String, dynamic>?> getSaranSafetyStok(String kodeProduk) async {
+    final response = await http
+        .get(
+          Uri.parse("$baseUrl/produk/safety-stock/$kodeProduk"),
+          headers: _authHeaders(),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      throw Exception('Gagal ambil saran safety stok (${response.statusCode})');
+    }
+  }
+
   static Future<void> addProduk(Map<String, dynamic> data) async {
     // data['reorder_point'] = 0;
 

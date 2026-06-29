@@ -25,6 +25,22 @@ class _FormEditProdukState extends State<FormEditProduk> {
   // late TextEditingController stok;
   late TextEditingController safety;
   bool isLoading = false;
+
+  Map<String, dynamic>? _saranSafety;
+  bool _isLoadingSaran = false;
+
+  Future<void> _fetchSaranSafety() async {
+    setState(() => _isLoadingSaran = true);
+    try {
+      final saran = await ProdukService.getSaranSafetyStok(widget.kodeAwal);
+      if (mounted) setState(() { _saranSafety = saran; _isLoadingSaran = false; });
+    } catch (e) {
+      if (mounted) setState(() { _saranSafety = null; _isLoadingSaran = false; });
+    }
+  }
+
+  void _gunakanSaran(int nilai) => safety.text = nilai.toString();
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +49,7 @@ class _FormEditProdukState extends State<FormEditProduk> {
     harga = TextEditingController(text: widget.hargaAwal);
     // stok = TextEditingController(text: widget.stokAwal);
     safety = TextEditingController(text: widget.safetyStokAwal);
+    _fetchSaranSafety();
   }
   @override
   Widget build(BuildContext context) {
@@ -58,13 +75,21 @@ class _FormEditProdukState extends State<FormEditProduk> {
               _buildField(label: 'Nama Produk', controller: nama),
               _buildField(label: 'Harga Jual', controller: harga, isNumber: true, prefix: 'Rp '),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildReadOnlyField(label: 'Stok', value: widget.stokAwal),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
-                    child: _buildField(label: 'Safety Stok', controller: safety, isNumber: true),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildField(label: 'Safety Stok', controller: safety, isNumber: true),
+                        const SizedBox(height: 6),
+                        _buildSaranWidget(),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -154,6 +179,45 @@ class _FormEditProdukState extends State<FormEditProduk> {
         ),
       ],
     );
+  }
+
+  Widget _buildSaranWidget() {
+    if (_isLoadingSaran) {
+      return const Row(
+        children: [
+          SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.5)),
+          SizedBox(width: 6),
+          Text('Memuat saran...', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+        ],
+      );
+    }
+    if (_saranSafety != null) {
+      final saran = _saranSafety!['safety_stock_saran'] as int? ?? 0;
+      if (saran > 0) {
+        return GestureDetector(
+          onTap: () => _gunakanSaran(saran),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8E1),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFFD4A017)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lightbulb_outline, size: 14, color: Color(0xFFB8860B)),
+                const SizedBox(width: 4),
+                Text('Saran: $saran unit', style: const TextStyle(fontSize: 12, color: Color(0xFF8B6914), fontWeight: FontWeight.w600)),
+                const SizedBox(width: 4),
+                Text('Gunakan', style: TextStyle(fontSize: 11, color: Colors.blue.shade700, decoration: TextDecoration.underline)),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+    return Text('Tidak ada saran tersedia', style: TextStyle(fontSize: 12, color: Colors.grey.shade400, fontStyle: FontStyle.italic));
   }
 
   Widget _buildReadOnlyField({
