@@ -7,7 +7,7 @@ class FormEditSupplier extends StatefulWidget {
   final String namaAwal;
   final String alamatAwal;
   final String noHpAwal;
-  final String leadTimeAwal;
+  // final String leadTimeAwal;
 
   const FormEditSupplier({
     super.key,
@@ -15,7 +15,7 @@ class FormEditSupplier extends StatefulWidget {
     required this.namaAwal,
     required this.alamatAwal,
     required this.noHpAwal,
-    required this.leadTimeAwal,
+    // required this.leadTimeAwal,
   });
 
   @override
@@ -27,7 +27,7 @@ class _FormEditSupplierState extends State<FormEditSupplier> {
   late TextEditingController namaController;
   late TextEditingController alamatController;
   late TextEditingController noHpController;
-  late TextEditingController leadTimeController;
+  // late TextEditingController leadTimeController;
 
   bool isLoading = false;
 
@@ -38,7 +38,7 @@ class _FormEditSupplierState extends State<FormEditSupplier> {
     namaController = TextEditingController(text: widget.namaAwal);
     alamatController = TextEditingController(text: widget.alamatAwal);
     noHpController = TextEditingController(text: widget.noHpAwal);
-    leadTimeController = TextEditingController(text: widget.leadTimeAwal);
+    // leadTimeController = TextEditingController(text: widget.leadTimeAwal);
   }
 
   Future<void> handleUpdate() async {
@@ -52,7 +52,7 @@ class _FormEditSupplierState extends State<FormEditSupplier> {
         "nama_supplier": namaController.text,
         "alamat": alamatController.text,
         "no_telp": noHpController.text,
-        "lead_time": int.tryParse(leadTimeController.text) ?? 0,
+        // "lead_time": int.tryParse(leadTimeController.text) ?? 0,
       });
 
       Navigator.pop(context);
@@ -107,7 +107,7 @@ class _FormEditSupplierState extends State<FormEditSupplier> {
               _buildField(label: 'Nama Supplier', controller: namaController),
               _buildField(label: 'Alamat', controller: alamatController),
               _buildField(label: 'No. HP / Telepon', controller: noHpController, isNumber: true),
-              _buildField(label: 'Lead Time Supplier (Hari)', controller: leadTimeController, isNumber: true),
+              // _buildField(label: 'Lead Time Supplier (Hari)', controller: leadTimeController, isNumber: true),
             ],
           ),
         ),

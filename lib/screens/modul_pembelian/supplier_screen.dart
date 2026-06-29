@@ -225,7 +225,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                       namaAwal: s['nama_supplier'],
                       alamatAwal: s['alamat'],
                       noHpAwal: s['no_telp'],
-                      leadTimeAwal: s['lead_time'].toString(),
+                      // leadTimeAwal: s['lead_time'].toString(),
                     ),
                   );
 

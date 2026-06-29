@@ -14,7 +14,7 @@ class _FormInputSupplierState extends State<FormInputSupplier> {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController alamatController = TextEditingController();
   final TextEditingController noHpController = TextEditingController();
-  final TextEditingController leadTimeController = TextEditingController();
+  // final TextEditingController leadTimeController = TextEditingController();
 
   bool isLoading = false;
 
@@ -28,7 +28,7 @@ class _FormInputSupplierState extends State<FormInputSupplier> {
         "nama_supplier": namaController.text,
         "alamat": alamatController.text,
         "no_telp": noHpController.text,
-        "lead_time": int.tryParse(leadTimeController.text) ?? 0,
+        // "lead_time": int.tryParse(leadTimeController.text) ?? 0,
       });
 
       Navigator.pop(context);
@@ -96,12 +96,12 @@ class _FormInputSupplierState extends State<FormInputSupplier> {
                 isNumber: true,
                 controller: noHpController,
               ),
-              _buildField(
-                label: 'Lead Time Supplier (Hari)',
-                hint: '0',
-                isNumber: true,
-                controller: leadTimeController,
-              ),
+              // _buildField(
+              //   label: 'Lead Time Supplier (Hari)',
+              //   hint: '0',
+              //   isNumber: true,
+              //   controller: leadTimeController,
+              // ),
             ],
           ),
         ),

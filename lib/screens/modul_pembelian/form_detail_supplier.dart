@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../service/supplier_service.dart';
 import '../../service/pembelian_service.dart';
 import '../../service/produk_service.dart';
-import '../../../global_widget/table.dart';
+import '../../global_widget/table.dart';
 
 class FormDetailSupplier extends StatefulWidget {
   final int idSupplier;
