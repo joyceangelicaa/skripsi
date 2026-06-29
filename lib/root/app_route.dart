@@ -16,6 +16,7 @@ import '../screens/modul_stok/input_stok_opname_screen.dart';
 import '../screens/modul_stok/detail_stok_opname_screen.dart';
 // import '../screens/modul_stok/edit_stok_opname_screen.dart';
 import '../screens/modul_stok/laporan_stok.dart'; // Import halaman Laporan Stok yang sudah dibuat
+import '../screens/modul_stok/laporan_batch.dart';
 
 //modul pembelian
 import '../screens/modul_pembelian/supplier_screen.dart';
@@ -57,6 +58,7 @@ class AppRoute {
   // static const String editStokOpname = '/edit-stok-opname';
   //laporan
   static const String laporanStok = '/laporan-stok';
+  static const String laporanBatch = '/laporan-batch';
 
   //======== modul pembelian ========
   //supplier
@@ -152,6 +154,10 @@ class AppRoute {
       case laporanStok:
         page = _withSidebar(const LaporanStokScreen());
         break;
+
+      case laporanBatch:
+        page = _withSidebar(const LaporanBatchScreen());
+        break;  
 
       //======== modul pembelian ========  
       //supplier    

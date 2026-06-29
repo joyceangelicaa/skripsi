@@ -24,7 +24,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _pembelianSelesai = 0;
   bool _isLoading = true;
   List<Map<String, dynamic>> _barangMenipis = [];
-  List<Map<String, dynamic>> _barangHabis = []; 
+  List<Map<String, dynamic>> _barangHabis = [];
+  List<Map<String, dynamic>> _barangOverstock = []; 
 
   // final List<Map<String, dynamic>> dummyBarangMenipis = [
   //   {'nama': 'Beras 5kg', 'qty': 5, 'rop': 10},
@@ -105,6 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         DashboardService.getStatusPembelian(startDate: _startDate, endDate: _endDate),
         DashboardService.getProdukTerlaris(startDate: _startDate, endDate: _endDate),
         DashboardService.getPenjualanHarian(startDate: _startDate, endDate: _endDate),
+        DashboardService.getProdukOverstock(),
       ]);
 
       // 3. Ambil rekomendasi & pisahkan Menipis vs Habis
@@ -141,7 +143,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .map<String>((e) => e['tanggal'] as String)
             .toList();
         _barangMenipis = menipis;
-        _barangHabis = habis;    
+        _barangHabis = habis; 
+        _barangOverstock = results[5] as List<Map<String, dynamic>>;   
         _isLoading = false;
       });
     } catch (e) {
@@ -177,6 +180,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _buildStatCards(),
                         const SizedBox(height: 24),
                         _buildRopLists(),
+                        const SizedBox(height: 24),
+                        _buildOverstockCard(),   
                         const SizedBox(height: 24),
                         _buildLineChartCard(),
                         const SizedBox(height: 24),
@@ -372,6 +377,154 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(width: 20),
         Expanded(child: _buildRopListCard('Barang Habis', _barangHabis, const Color(0xFFEF4444), showStok: true)),
       ],
+    );
+  }
+
+  Widget _buildOverstockCard() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: const Color(0xFFE2E8F0)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4A017),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Produk Overstock',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4A017).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_barangOverstock.length}',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFD4A017),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _tableHeader('Nama Barang', flex: 3),
+                _tableHeader('Kode Batch', flex: 2),
+                _tableHeader('Sisa Stok', flex: 1),
+              ],
+            ),
+          ),
+          if (_barangOverstock.isEmpty)
+            const SizedBox(
+              height: 200,
+              child: Center(
+                child: Text(
+                  'Tidak ada data',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 200,
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                itemCount: _barangOverstock.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                itemBuilder: (_, i) {
+                  final item = _barangOverstock[i];
+                  final produk = item['produk'] as Map<String, dynamic>? ?? {};
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            (produk['nama_produk'] as String?) ?? '-',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            (item['kode_batch'] as String?) ?? '-',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            '${item['sisa_stok'] ?? 0}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFD4A017),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 

@@ -131,6 +131,9 @@ class _SidebarState extends State<Sidebar> {
                     _buildSubMenu(title: 'Laporan Stok', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.laporanStok);
                     }),
+                    _buildSubMenu(title: 'Laporan Batch', onTap: () {
+                      Navigator.pushReplacementNamed(context, AppRoute.laporanBatch);
+                    }),
                   ],
                 ),
 
@@ -353,6 +356,9 @@ class _SidebarState extends State<Sidebar> {
                     if (role == 'admin')
                     _buildSubMenu(title: 'Laporan', onTap: () {
                       Navigator.pushReplacementNamed(context, AppRoute.laporanStok);
+                    }),
+                    _buildSubMenu(title: 'Laporan Batch', onTap: () {
+                      Navigator.pushReplacementNamed(context, AppRoute.laporanBatch);
                     }),
                   ],
                 ),

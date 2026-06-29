@@ -177,4 +177,39 @@ class ProdukService {
       throw Exception('Gagal hapus produk (${response.statusCode})');
     }
   }
+
+  static Future<List<Map<String, dynamic>>> getBatchByKodeProduk({
+    required String kodeProduk,
+  }) async {
+    final uri = Uri.parse("$baseUrl/produk/batch/$kodeProduk");
+    final response = await http
+        .get(uri, headers: _authHeaders())
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      return (result['data'] as List<dynamic>)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    throw Exception('Gagal ambil batch by produk (${response.statusCode})');
+  }
+
+  static Future<List<Map<String, dynamic>>> getBatchAllProduk({
+  int limit = 10,
+  int offset = 0,
+}) async {
+  final uri = Uri.parse("$baseUrl/produk/batch?limit=$limit&offset=$offset");
+  final response = await http
+      .get(uri, headers: _authHeaders())
+      .timeout(const Duration(seconds: 10));
+
+  if (response.statusCode == 200) {
+    final result = jsonDecode(response.body);
+    return (result['data'] as List<dynamic>)
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+  throw Exception('Gagal ambil batch all produk (${response.statusCode})');
+}
 }

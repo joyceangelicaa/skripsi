@@ -90,4 +90,16 @@ class DashboardService {
     }
     throw Exception('Gagal ambil penjualan harian (${res.statusCode})');
   }
+
+  static Future<List<Map<String, dynamic>>> getProdukOverstock() async {
+    final uri = Uri.parse("$baseUrl/overstock");
+    final res = await http.get(uri, headers: _authHeaders());
+    if (res.statusCode == 200) {
+      final result = jsonDecode(res.body);
+      return (result['data'] as List<dynamic>)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    throw Exception('Gagal ambil produk overstock (${res.statusCode})');
+  }
 }
