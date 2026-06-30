@@ -112,8 +112,8 @@ class PenjualanService {
   }
 
   // ADD DETAIL PENJUALAN
-  static Future<void> addDetailPenjualan(
-    List<Map<String, dynamic>> details,
+  static Future<List<String>> addDetailPenjualan(
+  List<Map<String, dynamic>> details,
   ) async {
     final res = await http.post(
       Uri.parse("$baseUrl/detail"),
@@ -121,10 +121,17 @@ class PenjualanService {
       body: jsonEncode(details),
     );
 
-    if (res.statusCode != 201) {
+    if (res.statusCode != 200 && res.statusCode != 201) {
       final resBody = jsonDecode(res.body);
       throw Exception(resBody['message'] ?? "Gagal tambah detail penjualan");
     }
+
+    final resBody = jsonDecode(res.body);         
+    final warnings = resBody['warnings'];       
+    if (warnings != null && warnings is List) { 
+      return warnings.cast<String>();             
+    }
+    return [];                                  
   }
 
   // EDIT PENJUALAN (HEADER ONLY)

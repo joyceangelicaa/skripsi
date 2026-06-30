@@ -316,7 +316,39 @@ class _InputTransaksiScreenState extends State<InputTransaksiScreen> {
 
                                     //debug lihat isi yang di kirim ke backend
                                     debugPrint("DETAIL PENJUALAN: $details");
-                                    await PenjualanService.addDetailPenjualan(details);
+                                    final warnings = await PenjualanService.addDetailPenjualan(details);
+
+                                    if (warnings.isNotEmpty && context.mounted) {
+                                      final shouldContinue = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Peringatan Harga'),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: warnings.map((w) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: Text(w),
+                                            )).toList(),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, false),
+                                              child: const Text('Batalkan'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(ctx, true),
+                                              child: const Text('Tetap Simpan'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (shouldContinue != true) {
+                                        await PenjualanService.deletePenjualan(nomerPenjualan);
+                                        return;
+                                      }
+                                    }
 
                                     //update header penjualan dengan total harga akhir
                                     await PenjualanService.editPenjualan(nomerPenjualan: nomerPenjualan,
